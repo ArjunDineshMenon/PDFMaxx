@@ -1,0 +1,74 @@
+/* PDFMaxx — Theme Variables, Dark/White Mode & Card Styles */
+:root {
+  --bg-page: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F1F5F9;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --border-color: #E2E8F0;
+  --tool-accent: #E11D48;
+  --tool-tint: rgba(225, 29, 72, 0.1);
+}
+html.dark {
+  --bg-page: #090D16;
+  --bg-surface: #111827;
+  --bg-elevated: #1E293B;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --border-color: #1F2937;
+}
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.22s ease, color 0.22s ease;
+  overflow-x: hidden;
+}
+.tool-card {
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.tool-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--card-color) !important;
+  box-shadow: 0 14px 28px -8px var(--card-shadow);
+}
+.tool-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--card-color);
+  border-top-left-radius: 0.95rem;
+  border-top-right-radius: 0.95rem;
+  opacity: 0.9;
+  transition: height 0.2s ease, opacity 0.2s ease;
+}
+.tool-card:hover::before {
+  height: 6px;
+  opacity: 1;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+.sig-canvas {
+  touch-action: none;
+  cursor: crosshair;
+}
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+.badge-new {
+  animation: pulseGlow 2.4s infinite ease-in-out;
+}

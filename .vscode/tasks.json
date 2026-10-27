@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build & Launch PDFMaxx.exe",
+      "type": "shell",
+      "command": "${workspaceFolder}/Build_and_Launch_PDFMaxx.bat",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Bundle src/ into dist/index.html & PDFMaxx.exe (Python)",
+      "type": "shell",
+      "command": "python desktop/build_exe.py",
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}

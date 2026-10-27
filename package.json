@@ -1,0 +1,34 @@
+{
+  "name": "pdfmaxx",
+  "version": "2.0.0",
+  "description": "PDFMaxx \u2014 All-in-One 31-Tool PDF Converter, Editor & AI Desktop Suite",
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "python desktop/build_standalone.py",
+    "build:standalone": "python desktop/build_standalone.py",
+    "build:bundle": "python desktop/build_exe.py",
+    "build:win": "Build_and_Launch_PDFMaxx.bat",
+    "pack:electron": "electron-builder --win portable"
+  },
+  "author": "Arjun Dinesh Menon",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.arjundineshmenon.pdfmaxx",
+    "productName": "PDFMaxx",
+    "files": [
+      "src/**/*",
+      "desktop/**/*",
+      "index.html",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "artifactName": "PDFMaxx.exe"
+    }
+  }
+}

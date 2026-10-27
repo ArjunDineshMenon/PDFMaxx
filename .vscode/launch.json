@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch PDFMaxx (Modular src/index.html in Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "file": "${workspaceFolder}/src/index.html"
+    },
+    {
+      "name": "Launch PDFMaxx Desktop App (Electron)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+      "args": [
+        "."
+      ],
+      "outputCapture": "std"
+    }
+  ]
+}

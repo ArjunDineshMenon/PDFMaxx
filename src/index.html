@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDFMaxx — All-in-One PDF Converter, Editor & AI Suite</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+    <link rel="stylesheet" href="css/styles.css" />
+
+</head>
+<body class="min-h-screen flex flex-col selection:bg-rose-500 selection:text-white">
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-white/90 dark:bg-gray-900/90 border-b border-slate-200 dark:border-gray-800 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <!-- Brand Logo -->
+      <button id="brandHomeBtn" type="button" class="flex items-center gap-3 text-left group focus:outline-none">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 via-red-500 to-orange-500 flex items-center justify-center text-white shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">PDF<span class="text-rose-600 dark:text-rose-500">Maxx</span></span>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60">31 Tools</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">100% Client-Side Conversion, Editing &amp; AI Suite</p>
+        </div>
+      </button>
+
+      <!-- Quick Category Shortcuts (Desktop) -->
+      <nav class="hidden xl:flex items-center gap-1">
+        <button type="button" data-nav-cat="all" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">All 31 Tools</button>
+        <button type="button" data-nav-cat="Organize" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">Organize</button>
+        <button type="button" data-nav-cat="Convert from PDF" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">Convert PDF</button>
+        <button type="button" data-nav-cat="Edit & Annotate" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">Edit &amp; Sign</button>
+        <button type="button" data-nav-cat="AI & Smart" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/50 transition-colors flex items-center gap-1">
+          <span>AI &amp; New</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+        </button>
+      </nav>
+
+      <!-- Right Controls: White/Dark Mode Toggle -->
+      <div class="flex items-center gap-2.5">
+
+        <!-- Theme Switcher (White Mode / Dark Mode) -->
+        <button id="themeToggleBtn" type="button" aria-label="Toggle White and Dark Mode" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm hover:opacity-90 transition-all">
+          <!-- Sun icon (shown in dark mode to switch to White Mode) -->
+          <svg id="themeIconSun" class="w-4 h-4 text-amber-500 hidden" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <!-- Moon icon (shown in white mode to switch to Dark Mode) -->
+          <svg id="themeIconMoon" class="w-4 h-4 text-sky-300" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+          <span id="themeToggleLabel">Dark Mode</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- VIEW 1: DIRECTORY & SEARCH VIEW -->
+    <section id="directoryView" class="space-y-8">
+      <!-- Hero & Search Bar -->
+      <div class="text-center max-w-3xl mx-auto space-y-5 pt-2">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-gray-800/90 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-gray-700 shadow-sm">
+          <span class="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+          <span>Every PDF &amp; File Utility You Need — Color-Coded &amp; Instant</span>
+        </div>
+
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+          Every tool you need to work with <span class="bg-gradient-to-r from-rose-600 via-orange-500 to-violet-600 bg-clip-text text-transparent">PDFs &amp; Documents</span>
+        </h1>
+
+        <p class="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+          Merge, split, compress, convert, edit, sign, OCR, redact, fill forms, summarize with AI, translate, or convert to Markdown. Click any tool below or search by function.
+        </p>
+
+        <!-- Interactive Search Bar -->
+        <div class="relative max-w-2xl mx-auto pt-1">
+          <div class="relative flex items-center bg-white dark:bg-gray-900 rounded-2xl border-2 border-slate-200 dark:border-gray-700 focus-within:border-rose-500 dark:focus-within:border-rose-500 shadow-lg shadow-slate-200/50 dark:shadow-black/40 transition-all">
+            <div class="pl-4 pr-2 text-slate-400 dark:text-slate-500 pointer-events-none">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <input
+              id="toolSearchInput"
+              type="text"
+              autocomplete="off"
+              placeholder="Search any function (e.g., Merge, PDF to Word, Crop, AI Summarizer, Translate, Markdown, Password...)"
+              class="w-full py-3.5 pr-24 bg-transparent text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
+            />
+            <div class="absolute right-3 flex items-center gap-1.5">
+              <button
+                id="clearSearchBtn"
+                type="button"
+                class="hidden px-2 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                Clear
+              </button>
+              <kbd class="hidden sm:inline-block px-2 py-1 text-[11px] font-mono font-semibold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-gray-800 rounded-md border border-slate-200 dark:border-gray-700">/</kbd>
+            </div>
+          </div>
+
+          <!-- Search Status & Quick Suggestions -->
+          <div class="flex flex-wrap items-center justify-between gap-2 mt-2.5 px-1 text-xs text-slate-500 dark:text-slate-400">
+            <span id="searchCountLabel" class="font-medium">Showing all 31 features</span>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span>Quick try:</span>
+              <button type="button" data-quick-search="Merge" class="quick-search-chip underline hover:text-rose-500">Merge</button>
+              <span>·</span>
+              <button type="button" data-quick-search="Word" class="quick-search-chip underline hover:text-blue-500">Word</button>
+              <span>·</span>
+              <button type="button" data-quick-search="Forms" class="quick-search-chip underline hover:text-teal-500">PDF Forms</button>
+              <span>·</span>
+              <button type="button" data-quick-search="Summarizer" class="quick-search-chip underline hover:text-fuchsia-500">AI Summarizer</button>
+              <span>·</span>
+              <button type="button" data-quick-search="Markdown" class="quick-search-chip underline hover:text-slate-900 dark:hover:text-white">Markdown</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div id="categoryFilterBar" class="flex flex-wrap items-center justify-center gap-2 pt-1">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Empty Search State -->
+      <div id="emptySearchState" class="hidden text-center py-14 px-4 rounded-3xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 max-w-xl mx-auto space-y-3">
+        <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-500 flex items-center justify-center mx-auto">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h2 class="text-lg font-bold text-slate-900 dark:text-white">No matching tools found</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Try searching for keywords like <span class="font-semibold">merge, split, word, excel, sign, watermark, ocr, crop, forms, summarize, translate</span>, or <span class="font-semibold">markdown</span>.</p>
+        <button id="resetFiltersBtn" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 transition-colors">
+          Show All 31 Tools
+        </button>
+      </div>
+
+      <!-- Tools Grid (31 Color-Distinguished Feature Cards) -->
+      <div id="toolsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </section>
+
+    <!-- VIEW 2: ACTIVE TOOL WORKSPACE STUDIO -->
+    <section id="workspaceView" class="hidden space-y-6">
+      <!-- Top Breadcrumb & Tool Switcher Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-900 p-4 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-sm">
+        <div class="flex items-center gap-3">
+          <button id="backToGridBtn" type="button" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-gray-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            <span>All 31 Tools</span>
+          </button>
+
+          <div class="h-6 w-px bg-slate-200 dark:bg-gray-700 hidden sm:block"></div>
+
+          <div class="flex items-center gap-3">
+            <div id="activeToolIconBox" class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shadow-sm"></div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 id="activeToolTitle" class="text-lg font-extrabold text-slate-900 dark:text-white">Tool Name</h2>
+                <span id="activeToolNewBadge" class="hidden px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-emerald-500 text-white">New!</span>
+                <span id="activeToolCategoryBadge" class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-300">Category</span>
+              </div>
+              <p id="activeToolDesc" class="text-xs text-slate-500 dark:text-slate-400">Tool description</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Jump Dropdown to Switch Between Any of the 31 Tools -->
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <label for="quickToolSelect" class="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">Switch tool:</label>
+          <select id="quickToolSelect" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-gray-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-gray-700 focus:outline-none">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Main Workspace Layout: Left Upload/Files & Config + Right Interactive Preview & Output -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Left Column (7 cols): File Dropzone, Loaded Files Queue, and Tool-Specific Controls -->
+        <div class="lg:col-span-7 space-y-5">
+
+          <!-- File Upload & Sample Loader Card -->
+          <div id="uploadCardContainer" class="bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 p-5 shadow-sm space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>1. Select or Drop Files</span>
+                  <span id="acceptedFormatsPill" class="px-2 py-0.5 rounded-md text-[11px] font-mono bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-300">.pdf</span>
+                </h3>
+                <p id="uploadHintText" class="text-xs text-slate-500 dark:text-slate-400">Upload from your device or load a built-in sample file to test immediately.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="loadSampleBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all shadow-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  <span id="loadSampleBtnLabel">Load Sample File</span>
+                </button>
+                <button id="clearFilesBtn" type="button" class="hidden px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-400 hover:text-rose-600 transition-colors">
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            <!-- Drag and Drop Zone -->
+            <div
+              id="dropZone"
+              class="relative border-2 border-dashed border-slate-300 dark:border-gray-700 rounded-2xl p-6 text-center hover:border-slate-400 dark:hover:border-gray-500 transition-all cursor-pointer bg-slate-50/70 dark:bg-gray-800/40"
+            >
+              <input id="fileInput" type="file" class="hidden" multiple />
+              <div class="space-y-2.5">
+                <div id="dropZoneIconBadge" class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-white shadow-md">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    Click to choose files <span class="font-normal text-slate-500 dark:text-slate-400">or drag &amp; drop here</span>
+                  </p>
+                  <p id="dropZoneSubtext" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Processed 100% locally in your browser — your files never leave your device
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Uploaded / Loaded Files List -->
+            <div id="fileQueueContainer" class="hidden space-y-2">
+              <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+                <span id="fileQueueCount" class="font-semibold">1 file ready</span>
+                <span id="fileQueueReorderHint">Use arrows to reorder sequence</span>
+              </div>
+              <div id="fileQueueList" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Tool-Specific Configuration & Interactive Controls -->
+          <div class="bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-gray-800 pb-3">
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">2. Configure Tool Settings</h3>
+              <span id="toolConfigSubtitle" class="text-xs font-medium text-slate-500 dark:text-slate-400">Custom parameters</span>
+            </div>
+
+            <!-- Dynamic Tool Options Form Container -->
+            <div id="toolOptionsContainer" class="space-y-4">
+              <!-- Populated per-tool by JS -->
+            </div>
+
+            <!-- Primary Execute Action Button -->
+            <div class="pt-2">
+              <button
+                id="runToolActionBtn"
+                type="button"
+                class="w-full py-3.5 px-6 rounded-xl font-bold text-white text-sm sm:text-base shadow-lg flex items-center justify-center gap-2.5 transition-all hover:opacity-95 active:scale-[0.99]"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <span id="runToolActionBtnText">Process File Now</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column (5 cols): Interactive Live Workbench, Visual Canvas Preview & Output Download -->
+        <div class="lg:col-span-5 space-y-5">
+
+          <!-- Live Document / Canvas Inspector Card -->
+          <div class="bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-gray-800 pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Live Document Preview &amp; Inspector</h3>
+                <p id="previewStatusSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Interactive preview updates automatically</p>
+              </div>
+              <span id="pageCountPill" class="px-2.5 py-1 rounded-lg text-xs font-mono font-semibold bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-slate-300">0 pages</span>
+            </div>
+
+            <!-- Visual Preview Stage -->
+            <div id="livePreviewStage" class="min-h-[300px] max-h-[460px] overflow-y-auto custom-scrollbar rounded-xl bg-slate-100/80 dark:bg-gray-950/80 border border-slate-200/80 dark:border-gray-800 p-4 flex flex-col items-center justify-center text-center">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Completed Result & Download Card -->
+          <div id="resultDownloadCard" class="hidden bg-emerald-50/90 dark:bg-emerald-950/40 rounded-2xl border-2 border-emerald-500/70 p-5 shadow-md space-y-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 id="resultTitleText" class="text-sm font-extrabold text-slate-900 dark:text-white">Task Completed!</h4>
+                  <p id="resultMetaText" class="text-xs text-slate-600 dark:text-slate-300">Your output file is ready to download.</p>
+                </div>
+              </div>
+              <span id="resultFormatBadge" class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-emerald-600 text-white uppercase">PDF</span>
+            </div>
+
+            <!-- Extra Result Summary / Text Output Box (for AI Summarizer, Translate, Markdown, OCR, Compare, etc.) -->
+            <div id="resultRichPreviewWrap" class="hidden space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-200" id="resultRichPreviewLabel">Generated Output Content</span>
+                <button id="copyResultTextBtn" type="button" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-gray-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-gray-700 hover:bg-slate-100">
+                  Copy Content
+                </button>
+              </div>
+              <pre id="resultRichPreviewBox" class="p-3 rounded-xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 text-xs font-mono text-slate-800 dark:text-slate-200 max-h-56 overflow-y-auto custom-scrollbar whitespace-pre-wrap"></pre>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <a
+                id="downloadResultLink"
+                href="#download"
+                download="output.pdf"
+                class="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm text-center shadow flex items-center justify-center gap-2 transition-colors"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                <span id="downloadResultBtnLabel">Download Output File</span>
+              </a>
+              <button
+                id="sendOutputToAnotherToolBtn"
+                type="button"
+                class="py-3 px-3.5 rounded-xl bg-white dark:bg-gray-800 hover:bg-slate-100 dark:hover:bg-gray-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-gray-700 font-semibold text-xs transition-colors"
+                title="Use this output PDF as the input for another tool"
+              >
+                Continue in Another Tool →
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-200">
+    <div class="flex items-center gap-3 px-4 py-3 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl border border-slate-700 dark:border-slate-200 text-xs sm:text-sm font-semibold">
+      <span id="toastDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+      <span id="toastMessage">Action completed</span>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-12 border-t border-slate-200 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-800 dark:text-slate-200">PDFMaxx</span>
+        <span>— Complete 31-Tool File Conversion, Editing &amp; AI Suite</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <span>White &amp; Dark Mode Ready</span>
+        <span>•</span>
+        <span>31 Color-Distinguished Features</span>
+        <span>•</span>
+        <span>Local Browser Processing</span>
+      </div>
+    </div>
+  </footer>
+
+    <!-- Modular Application Scripts (Edit in src/js/ in VS Code) -->
+  <script src="js/tools-config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/pdf-engine.js"></script>
+  <script src="js/processor.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

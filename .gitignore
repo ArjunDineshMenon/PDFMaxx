@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Build intermediates and output
+dist/
+desktop/_PDFMaxxDesktop_Generated.cs
+*.tmp
+
+# OS files
+Thumbs.db
+.DS_Store

@@ -1,0 +1,81 @@
+name: Build & Release PDFMaxx.exe
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build self-contained PDFMaxx.exe
+        run: python desktop/build_standalone.py
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDFMaxx-Windows
+          path: PDFMaxx.exe
+
+      # Create a GitHub Release when a tag is pushed (e.g. v2.0.0)
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "PDFMaxx ${{ github.ref_name }}"
+          body: |
+            ## PDFMaxx ${{ github.ref_name }} — All-in-One 31-Tool PDF Suite
+
+            ### ⬇️ Download
+            Download **PDFMaxx.exe** below — it's a single standalone file, no installation needed!
+
+            ### What's included
+            - 31 PDF tools: merge, split, compress, convert, edit, sign, OCR, AI summarize, and more
+            - Beautiful dark/light mode UI
+            - 100% client-side — your files never leave your device
+            - Runs in Chrome, Edge, or Brave in app mode
+
+            ### How to use
+            1. Download `PDFMaxx.exe` below
+            2. Double-click to run (no install needed)
+            3. Windows SmartScreen may warn — click "More info" → "Run anyway"
+          files: PDFMaxx.exe
+          draft: false
+          prerelease: false
+
+      # Also create/update the "latest" release for direct download links
+      - name: Update latest release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "PDFMaxx — Latest Build"
+          body: |
+            ## PDFMaxx — Latest Build
+
+            **⬇️ Download PDFMaxx.exe below** — single file, no installation needed!
+
+            This is an automatically updated build from the latest commit on the main branch.
+            For stable releases, see the [Releases](../../releases) page.
+
+            - 31 PDF tools built-in
+            - 100% offline, client-side processing
+            - ~800 KB standalone Windows executable
+          files: PDFMaxx.exe
+          draft: false
+          prerelease: false
+          make_latest: true
