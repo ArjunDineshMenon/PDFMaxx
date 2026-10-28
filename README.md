@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/badge/⬇_Download-PDFMaxx.exe-E11D48?style=for-the-badge&logo=windows&logoColor=white" alt="Download PDFMaxx.exe" />
   </a>
   &nbsp;
-  <img src="https://img.shields.io/badge/size-~800_KB-38BDF8?style=for-the-badge" alt="Size" />
+  <img src="https://img.shields.io/badge/size-~1.2_MB-38BDF8?style=for-the-badge" alt="Size" />
   &nbsp;
   <img src="https://img.shields.io/badge/platform-Windows_10/11-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Platform" />
   &nbsp;
@@ -25,17 +25,21 @@
 
 ## ⬇️ Download & Run
 
-### One-click download:
+### Direct Download Links:
 
-> **[📥 Click here to download PDFMaxx.exe](https://github.com/ArjunDineshMenon/PDFMaxx/releases/latest/download/PDFMaxx.exe)**
+| Source | Download Link | Description |
+|--------|---------------|-------------|
+| 🚀 **GitHub Release** | [**Download PDFMaxx.exe (Latest Release)**](https://github.com/ArjunDineshMenon/PDFMaxx/releases/latest/download/PDFMaxx.exe) | Recommended standalone build |
+| ⚡ **Direct Repo Mirror** | [**Download PDFMaxx.exe (Direct Mirror)**](https://github.com/ArjunDineshMenon/PDFMaxx/raw/main/PDFMaxx.exe) | Instant direct download from repo |
+| 📦 **All Releases** | [**View GitHub Releases**](https://github.com/ArjunDineshMenon/PDFMaxx/releases) | Release notes, changelog & tags |
 
 ### How to use:
-1. **Download** `PDFMaxx.exe` (only ~800 KB!)
-2. **Double-click** to launch — no installation needed
-3. If Windows SmartScreen appears, click **"More info"** → **"Run anyway"**
-4. The app opens in your default Chromium browser (Chrome, Edge, or Brave) in standalone app mode
+1. **Download** `PDFMaxx.exe` (only ~1.2 MB — self-contained, no installer!)
+2. **Double-click** to launch — works on any Windows PC
+3. If Windows SmartScreen appears on first run, click **"More info"** → **"Run anyway"**
+4. The app opens in your browser (Google Chrome, Microsoft Edge, or Brave) in standalone desktop app mode
 
-> **Requires:** Windows 10/11 with Chrome, Edge, or Brave installed. Internet connection needed on first use (libraries load from CDN).
+> **Requirements:** Windows 10/11 with Google Chrome, Microsoft Edge, or Brave Browser installed. Internet connection needed on first use (libraries load from CDN).
 
 ---
 
@@ -67,7 +71,7 @@ The app features a beautiful, modern UI with **dark mode** and **light mode** su
 
 ## 🏗️ How It Works
 
-PDFMaxx is a **single-file Windows executable** (~800 KB) that contains the entire application embedded inside it:
+PDFMaxx is a **single-file Windows executable** (~1.2 MB) that contains the entire application embedded inside it:
 
 1. On launch, it extracts the HTML app to `%LOCALAPPDATA%\PDFMaxx\`
 2. Opens it in your Chromium browser (Chrome/Edge/Brave) in **app mode** — no browser tabs, just a clean window

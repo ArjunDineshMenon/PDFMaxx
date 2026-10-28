@@ -74,7 +74,7 @@ jobs:
 
             - 31 PDF tools built-in
             - 100% offline, client-side processing
-            - ~800 KB standalone Windows executable
+            - ~1.2 MB standalone Windows executable
           files: PDFMaxx.exe
           draft: false
           prerelease: false
