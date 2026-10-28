@@ -3,7 +3,7 @@
 PDFMaxx Standalone Builder
 --------------------------
 1. Bundles modular src/ files into a single index.html (like build_exe.py)
-2. Embeds the bundled HTML as base64 inside PDFMaxxDesktop.cs
+2. Embeds the bundled HTML both as an assembly manifest resource and as base64 inside PDFMaxxDesktop.cs
 3. Compiles a self-contained PDFMaxx.exe with the app icon
 
 Usage:
@@ -74,7 +74,8 @@ def main():
     bundled_html = bundle_src()
 
     # Write bundled HTML to root and dist
-    with open(os.path.join(ROOT_DIR, "index.html"), "w", encoding="utf-8") as f:
+    root_html_path = os.path.join(ROOT_DIR, "index.html")
+    with open(root_html_path, "w", encoding="utf-8") as f:
         f.write(bundled_html)
     os.makedirs(DIST_DIR, exist_ok=True)
     with open(os.path.join(DIST_DIR, "index.html"), "w", encoding="utf-8") as f:
@@ -89,11 +90,15 @@ def main():
         with open(CS_TEMPLATE, "r", encoding="utf-8") as f:
             cs_source = f.read()
 
-        # Replace the placeholder with actual base64
-        cs_source = cs_source.replace(
-            '__PDFMAXX_HTML_B64_PLACEHOLDER__',
-            html_b64
-        )
+        # Replace ONLY the declaration placeholder, not anything else
+        placeholder_def = 'static string EMBEDDED_HTML_B64 = "__PDFMAXX_HTML_B64_PLACEHOLDER__";'
+        replacement_def = f'static string EMBEDDED_HTML_B64 = "{html_b64}";'
+        if placeholder_def in cs_source:
+            cs_source = cs_source.replace(placeholder_def, replacement_def, 1)
+        else:
+            # Fallback if whitespace differs
+            cs_source = cs_source.replace('__PDFMAXX_HTML_B64_PLACEHOLDER__', html_b64, 1)
+
         with open(CS_GENERATED, "w", encoding="utf-8") as f:
             f.write(cs_source)
         b64_size_kb = len(html_b64) / 1024
@@ -113,7 +118,7 @@ def main():
 
     # Step 4: Compile
     step_num = 3 if DEV_MODE else 4
-    step(step_num, total, "Compiling PDFMaxx.exe with icon...")
+    step(step_num, total, "Compiling PDFMaxx.exe with icon and embedded resources...")
     cmd = [
         csc,
         "/target:winexe",
@@ -121,6 +126,10 @@ def main():
         "/r:System.Windows.Forms.dll",
         "/optimize+",
     ]
+    if not DEV_MODE:
+        # Dual-layer embedding: manifest resource index.html + base64 string in binary
+        cmd.append(f"/resource:{root_html_path},PDFMaxx.index.html")
+
     if os.path.exists(ICO_PATH):
         cmd.append(f"/win32icon:{ICO_PATH}")
     cmd.append(CS_GENERATED)
@@ -137,6 +146,15 @@ def main():
     # Copy to dist
     shutil.copy2(EXE_OUTPUT, os.path.join(DIST_DIR, "PDFMaxx.exe"))
 
+    # Update Desktop copy if present
+    desktop_exe = os.path.join(os.path.expanduser("~"), "Desktop", "PDFMaxx.exe")
+    if os.path.exists(desktop_exe):
+        try:
+            shutil.copy2(EXE_OUTPUT, desktop_exe)
+            print(f"        Updated Desktop copy: {desktop_exe}")
+        except Exception as e:
+            print(f"        Notice: Could not copy to Desktop ({e})")
+
     # Clean up generated C# (don't leave huge file in repo)
     if os.path.exists(CS_GENERATED):
         os.remove(CS_GENERATED)
@@ -147,7 +165,7 @@ def main():
     print(f"\n  Output: {EXE_OUTPUT}")
     print(f"  Size:   {exe_size_str}")
     if not DEV_MODE:
-        print(f"  Mode:   Standalone — runs anywhere, no extra files needed!")
+        print(f"  Mode:   Standalone — runs anywhere on any computer, no extra files needed!")
     else:
         print(f"  Mode:   Developer — requires src/ or index.html alongside the EXE")
     print()
