@@ -682,7 +682,7 @@
       } else if (['txt', 'md', 'html', 'htm', 'rtf'].includes(ext)) {
         extractedText = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
         pageCount = Math.max(1, Math.ceil(extractedText.length / 2200));
-      } else if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+      } else if (['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'svg'].includes(ext) || (fileObj.type && fileObj.type.startsWith('image/'))) {
         pageCount = 1;
         extractedText = `[Image File: ${name} (${formatBytes(bytes.length)})]`;
       } else {
@@ -700,8 +700,9 @@
       }));
 
       let imageUrl = null;
-      if (['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
-        const blob = new Blob([bytes], { type: fileObj.type || 'image/jpeg' });
+      if (['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'svg'].includes(ext) || (fileObj.type && fileObj.type.startsWith('image/'))) {
+        const mime = fileObj.type || ('image/' + (ext === 'jpg' ? 'jpeg' : ext));
+        const blob = new Blob([bytes], { type: mime });
         imageUrl = URL.createObjectURL(blob);
       }
 

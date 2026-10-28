@@ -15,6 +15,8 @@
       lastOutputBytes: null,
       lastOutputFilename: 'output.pdf',
       lastOutputText: '',
+      lastOutputDataUrl: null,
+      lastOutputImageBadge: '',
       // Tool specific interactive state
       signatureDataUrl: null,
       editCanvasDataUrl: null,

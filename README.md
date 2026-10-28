@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">PDFMaxx</h1>
-<p align="center"><strong>All-in-One 31-Tool PDF Converter, Editor & AI Suite for Windows</strong></p>
+<p align="center"><strong>All-in-One 32-Tool PDF Converter, Editor, Image Suite &amp; AI for Windows</strong></p>
 
 <p align="center">
   <a href="https://github.com/ArjunDineshMenon/PDFMaxx/releases/latest/download/PDFMaxx.exe">
@@ -43,7 +43,7 @@
 
 ---
 
-## ✨ Features — 31 Built-In Tools
+## ✨ Features — 32 Built-In Tools
 
 | Category | Tools |
 |----------|-------|
@@ -52,7 +52,7 @@
 | **📥 Convert to PDF** | Images → PDF, Word → PDF, Excel → PDF, HTML → PDF |
 | **✏️ Edit & Annotate** | Add Watermark, Redact Text, Add Signature, Fill PDF Forms, Flatten PDF |
 | **🔐 Security** | Encrypt PDF, Unlock PDF |
-| **📊 Optimize** | Compress PDF, Repair PDF, Compare PDFs |
+| **📊 Optimize** | Compress PDF, Compress Image (New!), Repair PDF, Compare PDFs |
 | **🤖 AI & Smart** | AI Summarizer, OCR (Text Recognition), PDF Translator, Accessibility Checker, Auto-Crop, Batch Convert |
 
 ---

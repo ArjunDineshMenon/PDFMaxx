@@ -1,7 +1,7 @@
 {
   "name": "pdfmaxx",
   "version": "2.0.0",
-  "description": "PDFMaxx \u2014 All-in-One 31-Tool PDF Converter, Editor & AI Desktop Suite",
+  "description": "PDFMaxx \u2014 All-in-One 32-Tool PDF Converter, Editor, Image & AI Desktop Suite",
   "main": "desktop/main.js",
   "scripts": {
     "start": "electron .",

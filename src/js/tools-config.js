@@ -43,6 +43,18 @@
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>'
       },
       {
+        id: 'compress-image',
+        title: 'Compress Image',
+        desc: 'Compress JPG, PNG, and WebP images with high visual quality and massive file size reduction.',
+        category: 'Optimize',
+        color: '#0284C7', // Vibrant Sky Blue
+        badgeBg: 'rgba(2, 132, 199, 0.12)',
+        accept: '.jpg,.jpeg,.png,.webp,.bmp,.gif',
+        multiple: true,
+        isNew: true,
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v5m0 0l-1.5-1.5M12 8l1.5-1.5"/>'
+      },
+      {
         id: 'pdf-to-word',
         title: 'PDF to Word',
         desc: 'Easily convert your PDF files into easy to edit DOC and DOCX documents. The converted WORD document is almost 100% accurate.',
@@ -381,7 +393,7 @@
     ];
 
     const CATEGORIES = [
-      { id: 'all', label: 'All Tools (31)' },
+      { id: 'all', label: 'All Tools (32)' },
       { id: 'Organize', label: 'Organize PDF' },
       { id: 'Optimize', label: 'Optimize & Repair' },
       { id: 'Convert to PDF', label: 'Convert to PDF' },

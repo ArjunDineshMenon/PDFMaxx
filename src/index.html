@@ -51,7 +51,7 @@
         <div>
           <div class="flex items-center gap-2">
             <span class="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">PDF<span class="text-rose-600 dark:text-rose-500">Maxx</span></span>
-            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60">31 Tools</span>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60">32 Tools</span>
           </div>
           <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">100% Client-Side Conversion, Editing &amp; AI Suite</p>
         </div>
@@ -59,7 +59,7 @@
 
       <!-- Quick Category Shortcuts (Desktop) -->
       <nav class="hidden xl:flex items-center gap-1">
-        <button type="button" data-nav-cat="all" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">All 31 Tools</button>
+        <button type="button" data-nav-cat="all" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">All 32 Tools</button>
         <button type="button" data-nav-cat="Organize" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">Organize</button>
         <button type="button" data-nav-cat="Convert from PDF" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">Convert PDF</button>
         <button type="button" data-nav-cat="Edit & Annotate" class="nav-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors">Edit &amp; Sign</button>
@@ -137,10 +137,12 @@
 
           <!-- Search Status & Quick Suggestions -->
           <div class="flex flex-wrap items-center justify-between gap-2 mt-2.5 px-1 text-xs text-slate-500 dark:text-slate-400">
-            <span id="searchCountLabel" class="font-medium">Showing all 31 features</span>
+            <span id="searchCountLabel" class="font-medium">Showing all 32 features</span>
             <div class="flex flex-wrap items-center gap-1.5">
               <span>Quick try:</span>
               <button type="button" data-quick-search="Merge" class="quick-search-chip underline hover:text-rose-500">Merge</button>
+              <span>·</span>
+              <button type="button" data-quick-search="Compress" class="quick-search-chip underline hover:text-emerald-500">Compress</button>
               <span>·</span>
               <button type="button" data-quick-search="Word" class="quick-search-chip underline hover:text-blue-500">Word</button>
               <span>·</span>
@@ -167,13 +169,13 @@
           </svg>
         </div>
         <h2 class="text-lg font-bold text-slate-900 dark:text-white">No matching tools found</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Try searching for keywords like <span class="font-semibold">merge, split, word, excel, sign, watermark, ocr, crop, forms, summarize, translate</span>, or <span class="font-semibold">markdown</span>.</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Try searching for keywords like <span class="font-semibold">compress, image, merge, split, word, excel, sign, watermark, ocr, crop, forms, summarize, translate</span>, or <span class="font-semibold">markdown</span>.</p>
         <button id="resetFiltersBtn" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 transition-colors">
-          Show All 31 Tools
+          Show All 32 Tools
         </button>
       </div>
 
-      <!-- Tools Grid (31 Color-Distinguished Feature Cards) -->
+      <!-- Tools Grid (32 Color-Distinguished Feature Cards) -->
       <div id="toolsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
         <!-- Populated dynamically by JS -->
       </div>
@@ -188,7 +190,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
             </svg>
-            <span>All 31 Tools</span>
+            <span>All 32 Tools</span>
           </button>
 
           <div class="h-6 w-px bg-slate-200 dark:bg-gray-700 hidden sm:block"></div>
@@ -206,7 +208,7 @@
           </div>
         </div>
 
-        <!-- Quick Jump Dropdown to Switch Between Any of the 31 Tools -->
+        <!-- Quick Jump Dropdown to Switch Between Any of the 32 Tools -->
         <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
           <label for="quickToolSelect" class="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">Switch tool:</label>
           <select id="quickToolSelect" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-gray-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-gray-700 focus:outline-none">
@@ -344,6 +346,17 @@
               <span id="resultFormatBadge" class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-emerald-600 text-white uppercase">PDF</span>
             </div>
 
+            <!-- Image Result Preview (for Compress Image, PDF to JPG, etc.) -->
+            <div id="resultImagePreviewWrap" class="hidden space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Compressed Output Preview</span>
+                <span id="resultImageMetaBadge" class="px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300"></span>
+              </div>
+              <div class="p-3 rounded-xl bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 flex flex-col items-center justify-center">
+                <img id="resultImagePreviewImg" src="" alt="Compressed Output" class="max-h-72 max-w-full object-contain rounded-lg border border-slate-100 dark:border-gray-800 shadow-sm" />
+              </div>
+            </div>
+
             <!-- Extra Result Summary / Text Output Box (for AI Summarizer, Translate, Markdown, OCR, Compare, etc.) -->
             <div id="resultRichPreviewWrap" class="hidden space-y-2">
               <div class="flex items-center justify-between">
@@ -398,12 +411,12 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
       <div class="flex items-center gap-2">
         <span class="font-bold text-slate-800 dark:text-slate-200">PDFMaxx</span>
-        <span>— Complete 31-Tool File Conversion, Editing &amp; AI Suite</span>
+        <span>— Complete 32-Tool File Conversion, Editing &amp; AI Suite</span>
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <span>White &amp; Dark Mode Ready</span>
         <span>•</span>
-        <span>31 Color-Distinguished Features</span>
+        <span>32 Color-Distinguished Features</span>
         <span>•</span>
         <span>Local Browser Processing</span>
       </div>

@@ -38,13 +38,13 @@ jobs:
         with:
           name: "PDFMaxx ${{ github.ref_name }}"
           body: |
-            ## PDFMaxx ${{ github.ref_name }} — All-in-One 31-Tool PDF Suite
+            ## PDFMaxx ${{ github.ref_name }} — All-in-One 32-Tool PDF & Image Suite
 
             ### ⬇️ Download
             Download **PDFMaxx.exe** below — it's a single standalone file, no installation needed!
 
             ### What's included
-            - 31 PDF tools: merge, split, compress, convert, edit, sign, OCR, AI summarize, and more
+            - 32 PDF & image tools: image compress, merge, split, compress, convert, edit, sign, OCR, AI summarize, and more
             - Beautiful dark/light mode UI
             - 100% client-side — your files never leave your device
             - Runs in Chrome, Edge, or Brave in app mode
@@ -72,7 +72,7 @@ jobs:
             This is an automatically updated build from the latest commit on the main branch.
             For stable releases, see the [Releases](../../releases) page.
 
-            - 31 PDF tools built-in
+            - 32 PDF & image tools built-in
             - 100% offline, client-side processing
             - ~1.2 MB standalone Windows executable
           files: PDFMaxx.exe

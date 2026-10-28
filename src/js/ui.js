@@ -210,6 +210,9 @@
           tables: s2.tables,
           pagesMeta: Array.from({ length: s2.pageCount }, (_, i) => ({ num: i + 1, rotation: 0, deleted: false }))
         });
+      } else if (tool.id === 'compress-image') {
+        const img1 = createHighResSamplePhoto('High_Resolution_Sunset_Panorama.jpg', '#0284C7');
+        state.files.push(img1);
       } else if (tool.id === 'jpg-to-pdf' || tool.id === 'scan-to-pdf') {
         // Generate two clean canvas sample images
         const img1 = createSyntheticDocumentImage('Scanned Commercial Invoice #INV-2026-089', '#0284C7');
@@ -298,6 +301,110 @@
         bytes,
         pageCount: 1,
         extractedText: `${titleText}\nEnterprise Cloud PDF License: $2,400.00\nAI OCR & Translation Add-On: $850.00\nISO PDF/A Archival Storage: $600.00\nTotal Balance Due: $3,850.00`,
+        pagesMeta: [{ num: 1, rotation: 0, deleted: false }],
+        imageUrl: dataUrl
+      };
+    }
+
+    function createHighResSamplePhoto(titleText, accentColor) {
+      const c = document.createElement('canvas');
+      c.width = 1920;
+      c.height = 1080;
+      const ctx = c.getContext('2d');
+
+      // Draw rich photo-style gradient
+      const grad = ctx.createLinearGradient(0, 0, 1920, 1080);
+      grad.addColorStop(0, '#0F172A');
+      grad.addColorStop(0.3, '#1E293B');
+      grad.addColorStop(0.6, '#0369A1');
+      grad.addColorStop(0.85, '#0284C7');
+      grad.addColorStop(1, '#38BDF8');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      // Draw artistic mountain peaks / landscape shapes
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+      ctx.beginPath();
+      ctx.moveTo(0, 1080);
+      ctx.lineTo(250, 680);
+      ctx.lineTo(600, 850);
+      ctx.lineTo(950, 520);
+      ctx.lineTo(1350, 780);
+      ctx.lineTo(1700, 480);
+      ctx.lineTo(1920, 720);
+      ctx.lineTo(1920, 1080);
+      ctx.closePath();
+      ctx.fill();
+
+      // Foreground layer
+      ctx.fillStyle = '#090D16';
+      ctx.beginPath();
+      ctx.moveTo(0, 1080);
+      ctx.lineTo(350, 820);
+      ctx.lineTo(800, 950);
+      ctx.lineTo(1250, 790);
+      ctx.lineTo(1650, 910);
+      ctx.lineTo(1920, 840);
+      ctx.lineTo(1920, 1080);
+      ctx.closePath();
+      ctx.fill();
+
+      // Sun glow
+      const sunGrad = ctx.createRadialGradient(1550, 320, 20, 1550, 320, 220);
+      sunGrad.addColorStop(0, '#FEF08A');
+      sunGrad.addColorStop(0.4, '#F59E0B');
+      sunGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      ctx.fillStyle = sunGrad;
+      ctx.beginPath();
+      ctx.arc(1550, 320, 220, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Crisp typography & badges
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 54px Inter, sans-serif';
+      ctx.fillText('PDFMaxx High-Res Photography Sample', 100, 200);
+
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '500 28px Inter, sans-serif';
+      ctx.fillText('Original 1080p Master (1920 × 1080 px) • Uncompressed Raw Source', 100, 255);
+
+      // Detail card inside photo
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(100, 320, 700, 230, 24);
+      } else {
+        ctx.rect(100, 320, 700, 230);
+      }
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 26px Inter, sans-serif';
+      ctx.fillText('Intelligent Image Compression Test', 140, 380);
+      ctx.fillStyle = '#E2E8F0';
+      ctx.font = '20px Inter, sans-serif';
+      ctx.fillText('• 100% Client-Side Canvas & WebP Processing', 140, 425);
+      ctx.fillText('• Visually Lossless Fidelity Optimization', 140, 465);
+      ctx.fillText('• High-Performance Resampling Pipeline', 140, 505);
+
+      // Export as uncompressed maximum-quality JPEG so it demonstrates huge size reduction
+      const dataUrl = c.toDataURL('image/jpeg', 0.98);
+      const binStr = atob(dataUrl.split(',')[1]);
+      const bytes = new Uint8Array(binStr.length);
+      for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+
+      return {
+        id: 'img_sample_' + Math.random().toString(36).slice(2, 7),
+        name: 'High_Resolution_Sunset_Panorama.jpg',
+        size: bytes.length,
+        type: 'image/jpeg',
+        ext: 'jpg',
+        bytes,
+        pageCount: 1,
+        extractedText: `[High-Resolution Sample Image: 1920×1080 px (${formatBytes(bytes.length)})]`,
         pagesMeta: [{ num: 1, rotation: 0, deleted: false }],
         imageUrl: dataUrl
       };
@@ -440,6 +547,130 @@
               </label>
             </div>
           `;
+          break;
+
+        case 'compress-image':
+          box.innerHTML = `
+            <div class="space-y-4 text-xs">
+              <!-- Mode Selection Cards -->
+              <div>
+                <label class="block font-semibold mb-2 text-slate-700 dark:text-slate-300">Compression Preset</label>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <label id="cardOptCompressBalanced" class="p-3 rounded-xl border-2 border-sky-500 bg-sky-50/50 dark:bg-sky-950/30 cursor-pointer flex flex-col gap-1 transition-all">
+                    <div class="flex items-center gap-2 font-bold text-sky-600 dark:text-sky-400">
+                      <input type="radio" name="optImgCompressMode" value="balanced" checked class="accent-sky-600" />
+                      Recommended (Smart)
+                    </div>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400">~82% quality, visually lossless, 75-88% smaller</span>
+                  </label>
+                  <label id="cardOptCompressHigh" class="p-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/60 cursor-pointer flex flex-col gap-1 transition-all">
+                    <div class="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300">
+                      <input type="radio" name="optImgCompressMode" value="high" class="accent-sky-600" />
+                      High Quality
+                    </div>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400">~92% quality, full dimensions, 45-60% smaller</span>
+                  </label>
+                  <label id="cardOptCompressMax" class="p-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/60 cursor-pointer flex flex-col gap-1 transition-all">
+                    <div class="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300">
+                      <input type="radio" name="optImgCompressMode" value="max" class="accent-sky-600" />
+                      Maximum Compression
+                    </div>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400">~60% quality, max 1440px, 85-95% smaller</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Format & Resolution Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label class="block font-semibold mb-1">Output Format</label>
+                  <select id="optImgFormat" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
+                    <option value="auto" selected>Auto (Smallest file with transparency support)</option>
+                    <option value="webp">WebP (Modern Standard, Best Compression)</option>
+                    <option value="jpeg">JPEG (Universal Compatibility)</option>
+                    <option value="png">PNG (Lossless Optimized)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Max Resolution (Resize limit)</label>
+                  <select id="optImgResize" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
+                    <option value="1920" selected>Full HD (Max 1920 px) — Recommended</option>
+                    <option value="original">Keep Original Resolution (No resize)</option>
+                    <option value="3840">4K Ultra HD (Max 3840 px)</option>
+                    <option value="1280">HD (Max 1280 px)</option>
+                    <option value="800">Compact / Web (Max 800 px)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Quality Slider (Adjustable for fine-tuning) -->
+              <div class="p-3 rounded-xl bg-slate-50 dark:bg-gray-800/70 border border-slate-200 dark:border-gray-700/80 space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="font-semibold text-slate-700 dark:text-slate-300">Fine-Tune Quality Level</label>
+                  <span id="optImgQualityVal" class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300">82%</span>
+                </div>
+                <input id="optImgQualitySlider" type="range" min="10" max="100" value="82" class="w-full accent-sky-600 cursor-pointer" />
+                <div class="flex justify-between text-[10px] text-slate-400">
+                  <span>10% (Smallest file)</span>
+                  <span>50%</span>
+                  <span>82% (Sweet spot)</span>
+                  <span>100% (Maximum visual fidelity)</span>
+                </div>
+              </div>
+            </div>
+          `;
+
+          setTimeout(() => {
+            const slider = document.getElementById('optImgQualitySlider');
+            const qVal = document.getElementById('optImgQualityVal');
+            const resizeSel = document.getElementById('optImgResize');
+            const radios = document.querySelectorAll('input[name="optImgCompressMode"]');
+            const cardBal = document.getElementById('cardOptCompressBalanced');
+            const cardHigh = document.getElementById('cardOptCompressHigh');
+            const cardMax = document.getElementById('cardOptCompressMax');
+
+            function updateCardStyles(activeVal) {
+              [
+                { card: cardBal, val: 'balanced' },
+                { card: cardHigh, val: 'high' },
+                { card: cardMax, val: 'max' }
+              ].forEach(item => {
+                if (!item.card) return;
+                const isSelected = item.val === activeVal;
+                if (isSelected) {
+                  item.card.className = 'p-3 rounded-xl border-2 border-sky-500 bg-sky-50/50 dark:bg-sky-950/30 cursor-pointer flex flex-col gap-1 transition-all';
+                  const title = item.card.querySelector('.font-bold');
+                  if (title) title.className = 'flex items-center gap-2 font-bold text-sky-600 dark:text-sky-400';
+                } else {
+                  item.card.className = 'p-3 rounded-xl border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/60 cursor-pointer flex flex-col gap-1 transition-all';
+                  const title = item.card.querySelector('.font-bold');
+                  if (title) title.className = 'flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300';
+                }
+              });
+            }
+
+            if (slider && qVal) {
+              slider.addEventListener('input', () => {
+                qVal.textContent = slider.value + '%';
+              });
+            }
+
+            radios.forEach(r => {
+              r.addEventListener('change', () => {
+                updateCardStyles(r.value);
+                if (r.value === 'balanced') {
+                  if (slider) { slider.value = '82'; qVal.textContent = '82%'; }
+                  if (resizeSel) resizeSel.value = '1920';
+                } else if (r.value === 'high') {
+                  if (slider) { slider.value = '92'; qVal.textContent = '92%'; }
+                  if (resizeSel) resizeSel.value = 'original';
+                } else if (r.value === 'max') {
+                  if (slider) { slider.value = '60'; qVal.textContent = '60%'; }
+                  if (resizeSel) resizeSel.value = '1280';
+                }
+              });
+            });
+          }, 10);
           break;
 
         case 'pdf-to-word':
@@ -1689,6 +1920,16 @@
           renderFileQueue();
           renderLivePreviewStage();
           showToast('Loaded output PDF as input! Use "Switch tool" at top right to chain another feature.', '#3B82F6');
+        } else if (state.lastOutputBytes && (state.lastOutputFilename.endsWith('.jpg') || state.lastOutputFilename.endsWith('.png') || state.lastOutputFilename.endsWith('.webp'))) {
+          const ext = state.lastOutputFilename.split('.').pop();
+          const mime = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
+          const fakeFile = new File([state.lastOutputBytes], state.lastOutputFilename, { type: mime });
+          const parsed = await inspectUploadedFile(fakeFile);
+          state.files = [parsed];
+          document.getElementById('resultDownloadCard').classList.add('hidden');
+          renderFileQueue();
+          renderLivePreviewStage();
+          showToast('Loaded compressed image as input! Use "Switch tool" at top right to convert to PDF or chain another tool.', '#3B82F6');
         } else {
           document.getElementById('workspaceView').classList.add('hidden');
           document.getElementById('directoryView').classList.remove('hidden');
