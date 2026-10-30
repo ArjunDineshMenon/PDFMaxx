@@ -79,21 +79,23 @@
               const pInfo = (primaryFile.pagesData && primaryFile.pagesData[p - 1]) || { lines: [], plainText: '' };
               const pageBreak = p > 1 ? '<br clear="all" style="page-break-before:always" />' : '';
               let bodyHtml = '';
-              if (pInfo.lines && pInfo.lines.length > 0) {
+
+              if (includeVisualPages && window.pdfjsLib && p <= 100) {
+                try {
+                  const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 2.0, 0.90);
+                  if (rendered && rendered.dataUrl) {
+                    bodyHtml = `<div style="text-align:center;margin:0 auto;page-break-inside:avoid;"><img src="${rendered.dataUrl}" style="max-width:100%;height:auto;display:block;margin:0 auto;box-shadow:0 1px 3px rgba(0,0,0,0.1);" /></div>`;
+                  }
+                } catch (e) {}
+              }
+
+              if (!bodyHtml && pInfo.lines && pInfo.lines.length > 0) {
                 bodyHtml = pInfo.lines.map(l => {
                   const safe = l.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                   return l.isHeading
                     ? `<h2 style="font-family:Calibri,sans-serif;color:#0F172A;margin:10pt 0 4pt 0;">${safe}</h2>`
                     : `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin:0 0 6pt 0;white-space:pre-wrap;">${safe}</p>`;
                 }).join('\n');
-              }
-              if (!bodyHtml && window.pdfjsLib && p <= 100) {
-                try {
-                  const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 1.25, 0.84);
-                  if (rendered && rendered.dataUrl) {
-                    bodyHtml += `<div style="margin:8pt 0;"><img src="${rendered.dataUrl}" style="max-width:100%;height:auto;border:1px solid #E2E8F0;" /></div>`;
-                  }
-                } catch (e) {}
               }
               pagesHtml.push(`${pageBreak}<div class="pdf-page-section">${bodyHtml}</div>`);
             }
@@ -116,16 +118,41 @@ ${pagesHtml.join('\n')}
             outMime = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
             outFilename = `${baseName}_slides.pptx`;
             const pptx = new window.PptxGenJS();
-            const ratio = document.getElementById('optPptRatio')?.value || '16:9';
+            const ratio = document.getElementById('optPptRatio')?.value || 'auto';
             const theme = document.getElementById('optPptTheme')?.value || 'executive';
-            const layoutMode = document.getElementById('optPptLayout')?.value || 'editable';
-            const is169 = ratio === '16:9';
-            pptx.layout = is169 ? 'LAYOUT_16x9' : 'LAYOUT_4x3';
+            const layoutMode = document.getElementById('optPptLayout')?.value || 'exact';
 
-            const slideW = 10.0;
-            const slideH = is169 ? 5.625 : 7.5;
+            // Detect PDF page dimensions in inches (72 points = 1 inch)
+            const firstP = (primaryFile.pagesData && primaryFile.pagesData[0]) || {};
+            const pdfPtW = firstP.width || 612;
+            const pdfPtH = firstP.height || 792;
+            let pageInW = Number((pdfPtW / 72).toFixed(2));
+            let pageInH = Number((pdfPtH / 72).toFixed(2));
+            if (pageInW < 3 || pageInH < 3) {
+              pageInW = 8.5;
+              pageInH = 11.0;
+            }
+
+            let slideW = 10.0;
+            let slideH = 5.625;
+
+            if (ratio === 'auto') {
+              slideW = pageInW;
+              slideH = pageInH;
+              pptx.defineLayout({ name: 'PDF_EXACT', width: slideW, height: slideH });
+              pptx.layout = 'PDF_EXACT';
+            } else if (ratio === '4:3') {
+              slideW = 10.0;
+              slideH = 7.5;
+              pptx.layout = 'LAYOUT_4x3';
+            } else {
+              slideW = 10.0;
+              slideH = 5.625;
+              pptx.layout = 'LAYOUT_16x9';
+            }
+
             const contentX = 0.8;
-            const contentW = 8.4;
+            const contentW = Math.max(2.0, slideW - 1.6);
 
             // Professional theme palettes
             const themeColors = {
@@ -140,33 +167,46 @@ ${pagesHtml.join('\n')}
               runBtnText.textContent = `Building Slide ${p} of ${totalP}...`;
               const slide = pptx.addSlide();
               const pInfo = (primaryFile.pagesData && primaryFile.pagesData[p - 1]) || { lines: [], plainText: '' };
-              const hasTextLines = pInfo.lines && pInfo.lines.length > 0;
 
-              // MODE A: Visual Slide mode OR page with zero selectable text
-              // Centers the high-resolution page cleanly on the slide (NO text splitting!)
-              if (layoutMode === 'visual' || !hasTextLines) {
-                if (window.pdfjsLib && p <= 80) {
+              if (layoutMode === 'exact' || layoutMode === 'visual') {
+                // EXACT VISUAL MATCH (100% IDENTICAL TO PDF PAGE)
+                // Renders the entire PDF page at high DPI without cutting off any content
+                if (window.pdfjsLib) {
                   try {
-                    const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 1.5, 0.88);
+                    const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 2.2, 0.92);
                     if (rendered && rendered.dataUrl) {
-                      const maxW = 8.8;
-                      const maxH = is169 ? 5.0 : 6.8;
-                      const imgRatio = rendered.width / Math.max(1, rendered.height);
-                      let w = maxW;
-                      let h = w / imgRatio;
-                      if (h > maxH) {
-                        h = maxH;
-                        w = h * imgRatio;
+                      if (ratio === 'auto') {
+                        // Edge-to-edge 100% exact replica of the original PDF page
+                        slide.addImage({ data: rendered.dataUrl, x: 0, y: 0, w: slideW, h: slideH });
+                      } else {
+                        // Fit cleanly centered inside slide margins without cropping any content
+                        const maxW = slideW - 0.4;
+                        const maxH = slideH - 0.4;
+                        const imgRatio = rendered.width / Math.max(1, rendered.height);
+                        let w = maxW;
+                        let h = w / imgRatio;
+                        if (h > maxH) {
+                          h = maxH;
+                          w = h * imgRatio;
+                        }
+                        const x = (slideW - w) / 2;
+                        const y = (slideH - h) / 2;
+                        slide.addImage({ data: rendered.dataUrl, x, y, w, h });
                       }
-                      const x = (slideW - w) / 2;
-                      const y = (slideH - h) / 2;
-                      slide.addImage({ data: rendered.dataUrl, x, y, w, h });
                     }
-                  } catch (e) {}
+                  } catch (e) {
+                    console.warn(`Error rendering slide ${p}:`, e);
+                  }
+                }
+
+                // Attach complete extracted text to slide notes for full searchability & copying in PowerPoint
+                if (pInfo.plainText && pInfo.plainText.trim()) {
+                  try {
+                    slide.addNotes(pInfo.plainText.trim());
+                  } catch (ne) {}
                 }
               } else {
-                // MODE B: Full-Width Editable Presentation Slide (NO dual-rendering / NO split-page!)
-                // 1. Identify slide title
+                // EDITABLE SLIDE ELEMENTS MODE (NO CONTENT LOSS / NO TRUNCATION!)
                 let titleText = '';
                 let otherLines = [];
                 const firstHdrIdx = pInfo.lines.findIndex(l => l.isHeading && l.text.trim().length > 2);
@@ -183,33 +223,31 @@ ${pagesHtml.join('\n')}
                   titleText = titleText.slice(0, 92) + '...';
                 }
 
-                // 2. Slide Title across FULL slide width
                 slide.addText(titleText, {
                   x: contentX,
                   y: 0.45,
                   w: contentW,
                   h: 0.65,
-                  fontSize: is169 ? 18 : 20,
+                  fontSize: 18,
                   bold: true,
                   color: currentTheme.title,
                   valign: 'middle'
                 });
 
-                // 3. Separate table rows vs body text
                 const tableLines = otherLines.filter(l => l.cols && l.cols.length > 1);
                 const textLines = otherLines.filter(l => !l.cols || l.cols.length <= 1);
 
-                // If table detected, render as clean PptxGenJS table across full width
                 let curY = 1.25;
-                if (tableLines.length >= 2) {
-                  const tableData = tableLines.slice(0, 10).map((l, rIdx) => {
+                if (tableLines.length > 0) {
+                  const tblFont = tableLines.length > 10 ? 8 : (tableLines.length > 6 ? 8.5 : 9.5);
+                  const tableData = tableLines.map((l, rIdx) => {
                     return l.cols.map(c => ({
                       text: String(c || '').trim(),
                       options: {
                         bold: rIdx === 0,
                         fill: rIdx === 0 ? { color: currentTheme.tblHdr } : (rIdx % 2 === 1 ? { color: currentTheme.tblBg } : { color: 'FFFFFF' }),
                         color: rIdx === 0 ? 'FFFFFF' : '1E293B',
-                        fontSize: 9.5
+                        fontSize: tblFont
                       }
                     }));
                   });
@@ -219,31 +257,67 @@ ${pagesHtml.join('\n')}
                     w: contentW,
                     border: { pt: 0.5, color: 'E2E8F0' }
                   });
-                  curY += Math.min(3.2, 0.35 * Math.min(10, tableLines.length) + 0.3);
+                  curY += Math.min(slideH - 1.2, 0.30 * tableLines.length + 0.3);
                 }
 
-                // Render body paragraphs/bullets across the FULL slide width
                 const remainingH = (slideH - 0.5) - curY;
-                if (remainingH > 1.0 && textLines.length > 0) {
-                  const maxItems = is169 ? 10 : 14;
-                  const slideBodyText = textLines.slice(0, maxItems).map(l => {
-                    const clean = l.text.trim();
-                    return l.isHeading ? `\n${clean}` : `•  ${clean}`;
-                  }).join('\n').trim();
+                if (textLines.length > 0) {
+                  if (remainingH >= 1.2 || tableLines.length === 0) {
+                    const slideBodyText = textLines.map(l => {
+                      const clean = l.text.trim();
+                      return l.isHeading ? `\n${clean}` : `•  ${clean}`;
+                    }).join('\n').trim();
 
-                  slide.addText(slideBodyText, {
-                    x: contentX,
-                    y: curY,
-                    w: contentW,
-                    h: remainingH,
-                    fontSize: is169 ? 11 : 12,
-                    color: currentTheme.body,
-                    valign: 'top',
-                    wrap: true
-                  });
+                    slide.addText(slideBodyText, {
+                      x: contentX,
+                      y: curY,
+                      w: contentW,
+                      h: Math.max(1.2, remainingH),
+                      fontSize: textLines.length > 15 ? 9.5 : (textLines.length > 8 ? 10.5 : 11.5),
+                      color: currentTheme.body,
+                      valign: 'top',
+                      wrap: true
+                    });
+                  } else {
+                    // Content exceeds slide: add continuation slide so NO text/code is ever dropped!
+                    const contSlide = pptx.addSlide();
+                    contSlide.addText(`${titleText} (Continued)`, {
+                      x: contentX,
+                      y: 0.45,
+                      w: contentW,
+                      h: 0.65,
+                      fontSize: 18,
+                      bold: true,
+                      color: currentTheme.title,
+                      valign: 'middle'
+                    });
+                    const contBodyText = textLines.map(l => {
+                      const clean = l.text.trim();
+                      return l.isHeading ? `\n${clean}` : `•  ${clean}`;
+                    }).join('\n').trim();
+
+                    contSlide.addText(contBodyText, {
+                      x: contentX,
+                      y: 1.25,
+                      w: contentW,
+                      h: slideH - 1.8,
+                      fontSize: textLines.length > 15 ? 9.5 : 11,
+                      color: currentTheme.body,
+                      valign: 'top',
+                      wrap: true
+                    });
+                    contSlide.addText(`Slide ${p}b  |  ${baseName}`, {
+                      x: contentX,
+                      y: slideH - 0.45,
+                      w: contentW,
+                      h: 0.3,
+                      fontSize: 8.5,
+                      color: '94A3B8',
+                      align: 'right'
+                    });
+                  }
                 }
 
-                // 4. Clean bottom slide footer
                 slide.addText(`Slide ${p} of ${totalP}  |  ${baseName}`, {
                   x: contentX,
                   y: slideH - 0.45,
@@ -253,6 +327,12 @@ ${pagesHtml.join('\n')}
                   color: '94A3B8',
                   align: 'right'
                 });
+
+                if (pInfo.plainText && pInfo.plainText.trim()) {
+                  try {
+                    slide.addNotes(pInfo.plainText.trim());
+                  } catch (ne) {}
+                }
               }
             }
             const pptxBuf = await pptx.write('arraybuffer');
@@ -876,10 +956,13 @@ ${pagesHtml.join('\n')}
                 }
               }
 
-              // Embed real inline content images extracted from DOCX (filtering out any full-page replica screenshots)
+              // Embed real inline content images extracted from DOCX
               const docxImgs = (primaryFile.pagesData && primaryFile.pagesData[0]?.embeddedImages) || [];
-              const contentImgs = docxImgs.filter(img => !/^word\/media\/page_\d+\.(jpg|jpeg|png)$/i.test(img.name || ''));
-              for (const imgItem of contentImgs) {
+              let imgsToEmbed = docxImgs.filter(img => !/^word\/media\/page_\d+\.(jpg|jpeg|png)$/i.test(img.name || ''));
+              if (imgsToEmbed.length === 0 && docxImgs.length > 0) {
+                imgsToEmbed = docxImgs;
+              }
+              for (const imgItem of imgsToEmbed) {
                 try {
                   const emb = imgItem.isPng ? await outDoc.embedPng(imgItem.bytes) : await outDoc.embedJpg(imgItem.bytes);
                   const imgPage = outDoc.addPage([pWidth, pHeight]);

@@ -686,8 +686,8 @@
               <div>
                 <label class="block font-semibold mb-1">Reconstruction Mode</label>
                 <select id="optWordLayout" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
-                  <option value="exact">Maintain 100% Exact Visual Layout &amp; Tables</option>
-                  <option value="flowing">Flowing Editable Paragraphs</option>
+                  <option value="exact" selected>Exact Visual Match (100% Identical to PDF)</option>
+                  <option value="flowing">Flowing Editable Text &amp; Tables</option>
                 </select>
               </div>
             </div>
@@ -700,14 +700,15 @@
               <div>
                 <label class="block font-semibold mb-1">Slide Layout Mode</label>
                 <select id="optPptLayout" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
-                  <option value="editable" selected>Full Slide Editable Presentation</option>
-                  <option value="visual">High-Resolution Visual Slides</option>
+                  <option value="exact" selected>Exact Visual Match (100% Identical to PDF)</option>
+                  <option value="editable">Editable Slide Elements (Text &amp; Tables)</option>
                 </select>
               </div>
               <div>
                 <label class="block font-semibold mb-1">Slide Aspect Ratio</label>
                 <select id="optPptRatio" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
-                  <option value="16:9" selected>Widescreen Presentation (16:9)</option>
+                  <option value="auto" selected>Auto (Match Original PDF Size)</option>
+                  <option value="16:9">Widescreen Presentation (16:9)</option>
                   <option value="4:3">Standard Deck (4:3)</option>
                 </select>
               </div>

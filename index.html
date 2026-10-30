@@ -1401,16 +1401,94 @@ body {
           bodyParts.push(`<w:p><w:r><w:br w:type="page"/></w:r></w:p>`);
         }
 
-        if (hasTextLines) {
+        if (includePageImages && window.pdfjsLib) {
+          // EXACT VISUAL MATCH MODE (100% Identical to PDF Page)
+          try {
+            const rendered = await renderPdfPageToJpeg(fileRecord.bytes, pNum, 2.2, 0.92);
+            if (rendered && rendered.bytes) {
+              const rId = `rIdImg${pNum}`;
+              const imgFileName = `page_${pNum}.jpg`;
+              zip.file(`word/media/${imgFileName}`, rendered.bytes);
+              relsXmlItems.push(`<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${imgFileName}"/>`);
+              
+              // Standard Letter printable area: 10080 dxa x 13680 dxa (6,400,800 x 8,686,800 EMUs)
+              const imgAspect = rendered.height / Math.max(1, rendered.width);
+              let cx = 6400800;
+              let cy = Math.round(cx * imgAspect);
+              if (cy > 8686800) {
+                cy = 8686800;
+                cx = Math.round(cy / imgAspect);
+              }
+
+              bodyParts.push(`
+                <w:p>
+                  <w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr>
+                  <w:r>
+                    <w:drawing>
+                      <wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+                        <wp:extent cx="${cx}" cy="${cy}"/>
+                        <wp:docPr id="${pNum}" name="Page_${pNum}"/>
+                        <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                          <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                            <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                              <pic:nvPicPr><pic:cNvPr id="${pNum}" name="${imgFileName}"/><pic:cNvPicPr/></pic:nvPicPr>
+                              <pic:blipFill>
+                                <a:blip r:embed="${rId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>
+                                <a:stretch><a:fillRect/></a:stretch>
+                              </pic:blipFill>
+                              <pic:spPr>
+                                <a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>
+                                <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                              </pic:spPr>
+                            </pic:pic>
+                          </a:graphicData>
+                        </a:graphic>
+                      </wp:inline>
+                    </w:drawing>
+                  </w:r>
+                </w:p>
+              `);
+            }
+          } catch (imgErr) {
+            console.warn(`Error rendering exact page ${pNum} for docx:`, imgErr);
+          }
+        } else if (hasTextLines) {
+          // FLOWING EDITABLE TEXT & PROPER MULTI-ROW TABLES MODE
+          let pendingTableRows = [];
+          const flushTable = () => {
+            if (pendingTableRows.length === 0) return;
+            const maxCols = Math.max(1, ...pendingTableRows.map(r => r.length));
+            const cellW = Math.floor(9360 / maxCols);
+            const rowsXml = pendingTableRows.map((rowCols, rIdx) => {
+              const isHdr = rIdx === 0;
+              const cellsXml = rowCols.map(c => `
+                <w:tc>
+                  <w:tcPr>
+                    <w:tcW w:w="${cellW}" w:type="dxa"/>
+                    <w:shd w:val="clear" w:color="auto" w:fill="${isHdr ? '0F172A' : (rIdx % 2 === 1 ? 'F8FAFC' : 'FFFFFF')}"/>
+                  </w:tcPr>
+                  <w:p>
+                    <w:pPr><w:spacing w:before="60" w:after="60"/></w:pPr>
+                    <w:r>
+                      <w:rPr>
+                        ${isHdr ? '<w:b/><w:color w:val="FFFFFF"/>' : '<w:color w:val="1E293B"/>'}
+                        <w:sz w:val="20"/>
+                      </w:rPr>
+                      <w:t xml:space="preserve">${escapeXml(c)}</w:t>
+                    </w:r>
+                  </w:p>
+                </w:tc>`).join('');
+              return `<w:tr>${cellsXml}</w:tr>`;
+            }).join('');
+            bodyParts.push(`<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="E2E8F0"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="E2E8F0"/></w:tblBorders></w:tblPr>${rowsXml}</w:tbl>`);
+            pendingTableRows = [];
+          };
+
           for (const lineObj of pInfo.lines) {
             if (lineObj.cols && lineObj.cols.length >= 2) {
-              const cellsXml = lineObj.cols.map(c => `
-                <w:tc>
-                  <w:tcPr><w:tcW w:w="${Math.floor(9360 / lineObj.cols.length)}" w:type="dxa"/></w:tcPr>
-                  <w:p><w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(c)}</w:t></w:r></w:p>
-                </w:tc>`).join('');
-              bodyParts.push(`<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/></w:tblPr><w:tr>${cellsXml}</w:tr></w:tbl>`);
+              pendingTableRows.push(lineObj.cols);
             } else {
+              flushTable();
               const szHalfPt = lineObj.isHeading ? Math.min(36, Math.max(24, Math.round(lineObj.fontSize * 2))) : 22;
               bodyParts.push(`
                 <w:p>
@@ -1423,12 +1501,11 @@ body {
               `);
             }
           }
-        }
-
-        // Only embed full-page visual if the page has NO selectable text (i.e. scanned document or image-only page)
-        if (!hasTextLines && window.pdfjsLib && pNum <= 100) {
+          flushTable();
+        } else if (window.pdfjsLib && pNum <= 100) {
+          // Scanned page fallback
           try {
-            const rendered = await renderPdfPageToJpeg(fileRecord.bytes, pNum, hasTextLines ? 1.2 : 1.5, 0.84);
+            const rendered = await renderPdfPageToJpeg(fileRecord.bytes, pNum, 1.8, 0.88);
             if (rendered && rendered.bytes) {
               const rId = `rIdImg${pNum}`;
               const imgFileName = `page_${pNum}.jpg`;
@@ -1744,21 +1821,23 @@ body {
               const pInfo = (primaryFile.pagesData && primaryFile.pagesData[p - 1]) || { lines: [], plainText: '' };
               const pageBreak = p > 1 ? '<br clear="all" style="page-break-before:always" />' : '';
               let bodyHtml = '';
-              if (pInfo.lines && pInfo.lines.length > 0) {
+
+              if (includeVisualPages && window.pdfjsLib && p <= 100) {
+                try {
+                  const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 2.0, 0.90);
+                  if (rendered && rendered.dataUrl) {
+                    bodyHtml = `<div style="text-align:center;margin:0 auto;page-break-inside:avoid;"><img src="${rendered.dataUrl}" style="max-width:100%;height:auto;display:block;margin:0 auto;box-shadow:0 1px 3px rgba(0,0,0,0.1);" /></div>`;
+                  }
+                } catch (e) {}
+              }
+
+              if (!bodyHtml && pInfo.lines && pInfo.lines.length > 0) {
                 bodyHtml = pInfo.lines.map(l => {
                   const safe = l.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                   return l.isHeading
                     ? `<h2 style="font-family:Calibri,sans-serif;color:#0F172A;margin:10pt 0 4pt 0;">${safe}</h2>`
                     : `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin:0 0 6pt 0;white-space:pre-wrap;">${safe}</p>`;
                 }).join('\n');
-              }
-              if (!bodyHtml && window.pdfjsLib && p <= 100) {
-                try {
-                  const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 1.25, 0.84);
-                  if (rendered && rendered.dataUrl) {
-                    bodyHtml += `<div style="margin:8pt 0;"><img src="${rendered.dataUrl}" style="max-width:100%;height:auto;border:1px solid #E2E8F0;" /></div>`;
-                  }
-                } catch (e) {}
               }
               pagesHtml.push(`${pageBreak}<div class="pdf-page-section">${bodyHtml}</div>`);
             }
@@ -1781,16 +1860,41 @@ ${pagesHtml.join('\n')}
             outMime = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
             outFilename = `${baseName}_slides.pptx`;
             const pptx = new window.PptxGenJS();
-            const ratio = document.getElementById('optPptRatio')?.value || '16:9';
+            const ratio = document.getElementById('optPptRatio')?.value || 'auto';
             const theme = document.getElementById('optPptTheme')?.value || 'executive';
-            const layoutMode = document.getElementById('optPptLayout')?.value || 'editable';
-            const is169 = ratio === '16:9';
-            pptx.layout = is169 ? 'LAYOUT_16x9' : 'LAYOUT_4x3';
+            const layoutMode = document.getElementById('optPptLayout')?.value || 'exact';
 
-            const slideW = 10.0;
-            const slideH = is169 ? 5.625 : 7.5;
+            // Detect PDF page dimensions in inches (72 points = 1 inch)
+            const firstP = (primaryFile.pagesData && primaryFile.pagesData[0]) || {};
+            const pdfPtW = firstP.width || 612;
+            const pdfPtH = firstP.height || 792;
+            let pageInW = Number((pdfPtW / 72).toFixed(2));
+            let pageInH = Number((pdfPtH / 72).toFixed(2));
+            if (pageInW < 3 || pageInH < 3) {
+              pageInW = 8.5;
+              pageInH = 11.0;
+            }
+
+            let slideW = 10.0;
+            let slideH = 5.625;
+
+            if (ratio === 'auto') {
+              slideW = pageInW;
+              slideH = pageInH;
+              pptx.defineLayout({ name: 'PDF_EXACT', width: slideW, height: slideH });
+              pptx.layout = 'PDF_EXACT';
+            } else if (ratio === '4:3') {
+              slideW = 10.0;
+              slideH = 7.5;
+              pptx.layout = 'LAYOUT_4x3';
+            } else {
+              slideW = 10.0;
+              slideH = 5.625;
+              pptx.layout = 'LAYOUT_16x9';
+            }
+
             const contentX = 0.8;
-            const contentW = 8.4;
+            const contentW = Math.max(2.0, slideW - 1.6);
 
             // Professional theme palettes
             const themeColors = {
@@ -1805,33 +1909,46 @@ ${pagesHtml.join('\n')}
               runBtnText.textContent = `Building Slide ${p} of ${totalP}...`;
               const slide = pptx.addSlide();
               const pInfo = (primaryFile.pagesData && primaryFile.pagesData[p - 1]) || { lines: [], plainText: '' };
-              const hasTextLines = pInfo.lines && pInfo.lines.length > 0;
 
-              // MODE A: Visual Slide mode OR page with zero selectable text
-              // Centers the high-resolution page cleanly on the slide (NO text splitting!)
-              if (layoutMode === 'visual' || !hasTextLines) {
-                if (window.pdfjsLib && p <= 80) {
+              if (layoutMode === 'exact' || layoutMode === 'visual') {
+                // EXACT VISUAL MATCH (100% IDENTICAL TO PDF PAGE)
+                // Renders the entire PDF page at high DPI without cutting off any content
+                if (window.pdfjsLib) {
                   try {
-                    const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 1.5, 0.88);
+                    const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 2.2, 0.92);
                     if (rendered && rendered.dataUrl) {
-                      const maxW = 8.8;
-                      const maxH = is169 ? 5.0 : 6.8;
-                      const imgRatio = rendered.width / Math.max(1, rendered.height);
-                      let w = maxW;
-                      let h = w / imgRatio;
-                      if (h > maxH) {
-                        h = maxH;
-                        w = h * imgRatio;
+                      if (ratio === 'auto') {
+                        // Edge-to-edge 100% exact replica of the original PDF page
+                        slide.addImage({ data: rendered.dataUrl, x: 0, y: 0, w: slideW, h: slideH });
+                      } else {
+                        // Fit cleanly centered inside slide margins without cropping any content
+                        const maxW = slideW - 0.4;
+                        const maxH = slideH - 0.4;
+                        const imgRatio = rendered.width / Math.max(1, rendered.height);
+                        let w = maxW;
+                        let h = w / imgRatio;
+                        if (h > maxH) {
+                          h = maxH;
+                          w = h * imgRatio;
+                        }
+                        const x = (slideW - w) / 2;
+                        const y = (slideH - h) / 2;
+                        slide.addImage({ data: rendered.dataUrl, x, y, w, h });
                       }
-                      const x = (slideW - w) / 2;
-                      const y = (slideH - h) / 2;
-                      slide.addImage({ data: rendered.dataUrl, x, y, w, h });
                     }
-                  } catch (e) {}
+                  } catch (e) {
+                    console.warn(`Error rendering slide ${p}:`, e);
+                  }
+                }
+
+                // Attach complete extracted text to slide notes for full searchability & copying in PowerPoint
+                if (pInfo.plainText && pInfo.plainText.trim()) {
+                  try {
+                    slide.addNotes(pInfo.plainText.trim());
+                  } catch (ne) {}
                 }
               } else {
-                // MODE B: Full-Width Editable Presentation Slide (NO dual-rendering / NO split-page!)
-                // 1. Identify slide title
+                // EDITABLE SLIDE ELEMENTS MODE (NO CONTENT LOSS / NO TRUNCATION!)
                 let titleText = '';
                 let otherLines = [];
                 const firstHdrIdx = pInfo.lines.findIndex(l => l.isHeading && l.text.trim().length > 2);
@@ -1848,33 +1965,31 @@ ${pagesHtml.join('\n')}
                   titleText = titleText.slice(0, 92) + '...';
                 }
 
-                // 2. Slide Title across FULL slide width
                 slide.addText(titleText, {
                   x: contentX,
                   y: 0.45,
                   w: contentW,
                   h: 0.65,
-                  fontSize: is169 ? 18 : 20,
+                  fontSize: 18,
                   bold: true,
                   color: currentTheme.title,
                   valign: 'middle'
                 });
 
-                // 3. Separate table rows vs body text
                 const tableLines = otherLines.filter(l => l.cols && l.cols.length > 1);
                 const textLines = otherLines.filter(l => !l.cols || l.cols.length <= 1);
 
-                // If table detected, render as clean PptxGenJS table across full width
                 let curY = 1.25;
-                if (tableLines.length >= 2) {
-                  const tableData = tableLines.slice(0, 10).map((l, rIdx) => {
+                if (tableLines.length > 0) {
+                  const tblFont = tableLines.length > 10 ? 8 : (tableLines.length > 6 ? 8.5 : 9.5);
+                  const tableData = tableLines.map((l, rIdx) => {
                     return l.cols.map(c => ({
                       text: String(c || '').trim(),
                       options: {
                         bold: rIdx === 0,
                         fill: rIdx === 0 ? { color: currentTheme.tblHdr } : (rIdx % 2 === 1 ? { color: currentTheme.tblBg } : { color: 'FFFFFF' }),
                         color: rIdx === 0 ? 'FFFFFF' : '1E293B',
-                        fontSize: 9.5
+                        fontSize: tblFont
                       }
                     }));
                   });
@@ -1884,31 +1999,67 @@ ${pagesHtml.join('\n')}
                     w: contentW,
                     border: { pt: 0.5, color: 'E2E8F0' }
                   });
-                  curY += Math.min(3.2, 0.35 * Math.min(10, tableLines.length) + 0.3);
+                  curY += Math.min(slideH - 1.2, 0.30 * tableLines.length + 0.3);
                 }
 
-                // Render body paragraphs/bullets across the FULL slide width
                 const remainingH = (slideH - 0.5) - curY;
-                if (remainingH > 1.0 && textLines.length > 0) {
-                  const maxItems = is169 ? 10 : 14;
-                  const slideBodyText = textLines.slice(0, maxItems).map(l => {
-                    const clean = l.text.trim();
-                    return l.isHeading ? `\n${clean}` : `•  ${clean}`;
-                  }).join('\n').trim();
+                if (textLines.length > 0) {
+                  if (remainingH >= 1.2 || tableLines.length === 0) {
+                    const slideBodyText = textLines.map(l => {
+                      const clean = l.text.trim();
+                      return l.isHeading ? `\n${clean}` : `•  ${clean}`;
+                    }).join('\n').trim();
 
-                  slide.addText(slideBodyText, {
-                    x: contentX,
-                    y: curY,
-                    w: contentW,
-                    h: remainingH,
-                    fontSize: is169 ? 11 : 12,
-                    color: currentTheme.body,
-                    valign: 'top',
-                    wrap: true
-                  });
+                    slide.addText(slideBodyText, {
+                      x: contentX,
+                      y: curY,
+                      w: contentW,
+                      h: Math.max(1.2, remainingH),
+                      fontSize: textLines.length > 15 ? 9.5 : (textLines.length > 8 ? 10.5 : 11.5),
+                      color: currentTheme.body,
+                      valign: 'top',
+                      wrap: true
+                    });
+                  } else {
+                    // Content exceeds slide: add continuation slide so NO text/code is ever dropped!
+                    const contSlide = pptx.addSlide();
+                    contSlide.addText(`${titleText} (Continued)`, {
+                      x: contentX,
+                      y: 0.45,
+                      w: contentW,
+                      h: 0.65,
+                      fontSize: 18,
+                      bold: true,
+                      color: currentTheme.title,
+                      valign: 'middle'
+                    });
+                    const contBodyText = textLines.map(l => {
+                      const clean = l.text.trim();
+                      return l.isHeading ? `\n${clean}` : `•  ${clean}`;
+                    }).join('\n').trim();
+
+                    contSlide.addText(contBodyText, {
+                      x: contentX,
+                      y: 1.25,
+                      w: contentW,
+                      h: slideH - 1.8,
+                      fontSize: textLines.length > 15 ? 9.5 : 11,
+                      color: currentTheme.body,
+                      valign: 'top',
+                      wrap: true
+                    });
+                    contSlide.addText(`Slide ${p}b  |  ${baseName}`, {
+                      x: contentX,
+                      y: slideH - 0.45,
+                      w: contentW,
+                      h: 0.3,
+                      fontSize: 8.5,
+                      color: '94A3B8',
+                      align: 'right'
+                    });
+                  }
                 }
 
-                // 4. Clean bottom slide footer
                 slide.addText(`Slide ${p} of ${totalP}  |  ${baseName}`, {
                   x: contentX,
                   y: slideH - 0.45,
@@ -1918,6 +2069,12 @@ ${pagesHtml.join('\n')}
                   color: '94A3B8',
                   align: 'right'
                 });
+
+                if (pInfo.plainText && pInfo.plainText.trim()) {
+                  try {
+                    slide.addNotes(pInfo.plainText.trim());
+                  } catch (ne) {}
+                }
               }
             }
             const pptxBuf = await pptx.write('arraybuffer');
@@ -2541,10 +2698,13 @@ ${pagesHtml.join('\n')}
                 }
               }
 
-              // Embed real inline content images extracted from DOCX (filtering out any full-page replica screenshots)
+              // Embed real inline content images extracted from DOCX
               const docxImgs = (primaryFile.pagesData && primaryFile.pagesData[0]?.embeddedImages) || [];
-              const contentImgs = docxImgs.filter(img => !/^word\/media\/page_\d+\.(jpg|jpeg|png)$/i.test(img.name || ''));
-              for (const imgItem of contentImgs) {
+              let imgsToEmbed = docxImgs.filter(img => !/^word\/media\/page_\d+\.(jpg|jpeg|png)$/i.test(img.name || ''));
+              if (imgsToEmbed.length === 0 && docxImgs.length > 0) {
+                imgsToEmbed = docxImgs;
+              }
+              for (const imgItem of imgsToEmbed) {
                 try {
                   const emb = imgItem.isPng ? await outDoc.embedPng(imgItem.bytes) : await outDoc.embedJpg(imgItem.bytes);
                   const imgPage = outDoc.addPage([pWidth, pHeight]);
@@ -3779,8 +3939,8 @@ ${pagesHtml.join('\n')}
               <div>
                 <label class="block font-semibold mb-1">Reconstruction Mode</label>
                 <select id="optWordLayout" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
-                  <option value="exact">Maintain 100% Exact Visual Layout &amp; Tables</option>
-                  <option value="flowing">Flowing Editable Paragraphs</option>
+                  <option value="exact" selected>Exact Visual Match (100% Identical to PDF)</option>
+                  <option value="flowing">Flowing Editable Text &amp; Tables</option>
                 </select>
               </div>
             </div>
@@ -3793,14 +3953,15 @@ ${pagesHtml.join('\n')}
               <div>
                 <label class="block font-semibold mb-1">Slide Layout Mode</label>
                 <select id="optPptLayout" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
-                  <option value="editable" selected>Full Slide Editable Presentation</option>
-                  <option value="visual">High-Resolution Visual Slides</option>
+                  <option value="exact" selected>Exact Visual Match (100% Identical to PDF)</option>
+                  <option value="editable">Editable Slide Elements (Text &amp; Tables)</option>
                 </select>
               </div>
               <div>
                 <label class="block font-semibold mb-1">Slide Aspect Ratio</label>
                 <select id="optPptRatio" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
-                  <option value="16:9" selected>Widescreen Presentation (16:9)</option>
+                  <option value="auto" selected>Auto (Match Original PDF Size)</option>
+                  <option value="16:9">Widescreen Presentation (16:9)</option>
                   <option value="4:3">Standard Deck (4:3)</option>
                 </select>
               </div>

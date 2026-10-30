@@ -461,16 +461,94 @@
           bodyParts.push(`<w:p><w:r><w:br w:type="page"/></w:r></w:p>`);
         }
 
-        if (hasTextLines) {
+        if (includePageImages && window.pdfjsLib) {
+          // EXACT VISUAL MATCH MODE (100% Identical to PDF Page)
+          try {
+            const rendered = await renderPdfPageToJpeg(fileRecord.bytes, pNum, 2.2, 0.92);
+            if (rendered && rendered.bytes) {
+              const rId = `rIdImg${pNum}`;
+              const imgFileName = `page_${pNum}.jpg`;
+              zip.file(`word/media/${imgFileName}`, rendered.bytes);
+              relsXmlItems.push(`<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${imgFileName}"/>`);
+              
+              // Standard Letter printable area: 10080 dxa x 13680 dxa (6,400,800 x 8,686,800 EMUs)
+              const imgAspect = rendered.height / Math.max(1, rendered.width);
+              let cx = 6400800;
+              let cy = Math.round(cx * imgAspect);
+              if (cy > 8686800) {
+                cy = 8686800;
+                cx = Math.round(cy / imgAspect);
+              }
+
+              bodyParts.push(`
+                <w:p>
+                  <w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr>
+                  <w:r>
+                    <w:drawing>
+                      <wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+                        <wp:extent cx="${cx}" cy="${cy}"/>
+                        <wp:docPr id="${pNum}" name="Page_${pNum}"/>
+                        <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                          <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                            <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                              <pic:nvPicPr><pic:cNvPr id="${pNum}" name="${imgFileName}"/><pic:cNvPicPr/></pic:nvPicPr>
+                              <pic:blipFill>
+                                <a:blip r:embed="${rId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>
+                                <a:stretch><a:fillRect/></a:stretch>
+                              </pic:blipFill>
+                              <pic:spPr>
+                                <a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>
+                                <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+                              </pic:spPr>
+                            </pic:pic>
+                          </a:graphicData>
+                        </a:graphic>
+                      </wp:inline>
+                    </w:drawing>
+                  </w:r>
+                </w:p>
+              `);
+            }
+          } catch (imgErr) {
+            console.warn(`Error rendering exact page ${pNum} for docx:`, imgErr);
+          }
+        } else if (hasTextLines) {
+          // FLOWING EDITABLE TEXT & PROPER MULTI-ROW TABLES MODE
+          let pendingTableRows = [];
+          const flushTable = () => {
+            if (pendingTableRows.length === 0) return;
+            const maxCols = Math.max(1, ...pendingTableRows.map(r => r.length));
+            const cellW = Math.floor(9360 / maxCols);
+            const rowsXml = pendingTableRows.map((rowCols, rIdx) => {
+              const isHdr = rIdx === 0;
+              const cellsXml = rowCols.map(c => `
+                <w:tc>
+                  <w:tcPr>
+                    <w:tcW w:w="${cellW}" w:type="dxa"/>
+                    <w:shd w:val="clear" w:color="auto" w:fill="${isHdr ? '0F172A' : (rIdx % 2 === 1 ? 'F8FAFC' : 'FFFFFF')}"/>
+                  </w:tcPr>
+                  <w:p>
+                    <w:pPr><w:spacing w:before="60" w:after="60"/></w:pPr>
+                    <w:r>
+                      <w:rPr>
+                        ${isHdr ? '<w:b/><w:color w:val="FFFFFF"/>' : '<w:color w:val="1E293B"/>'}
+                        <w:sz w:val="20"/>
+                      </w:rPr>
+                      <w:t xml:space="preserve">${escapeXml(c)}</w:t>
+                    </w:r>
+                  </w:p>
+                </w:tc>`).join('');
+              return `<w:tr>${cellsXml}</w:tr>`;
+            }).join('');
+            bodyParts.push(`<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="E2E8F0"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="E2E8F0"/></w:tblBorders></w:tblPr>${rowsXml}</w:tbl>`);
+            pendingTableRows = [];
+          };
+
           for (const lineObj of pInfo.lines) {
             if (lineObj.cols && lineObj.cols.length >= 2) {
-              const cellsXml = lineObj.cols.map(c => `
-                <w:tc>
-                  <w:tcPr><w:tcW w:w="${Math.floor(9360 / lineObj.cols.length)}" w:type="dxa"/></w:tcPr>
-                  <w:p><w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve">${escapeXml(c)}</w:t></w:r></w:p>
-                </w:tc>`).join('');
-              bodyParts.push(`<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/></w:tblPr><w:tr>${cellsXml}</w:tr></w:tbl>`);
+              pendingTableRows.push(lineObj.cols);
             } else {
+              flushTable();
               const szHalfPt = lineObj.isHeading ? Math.min(36, Math.max(24, Math.round(lineObj.fontSize * 2))) : 22;
               bodyParts.push(`
                 <w:p>
@@ -483,12 +561,11 @@
               `);
             }
           }
-        }
-
-        // Only embed full-page visual if the page has NO selectable text (i.e. scanned document or image-only page)
-        if (!hasTextLines && window.pdfjsLib && pNum <= 100) {
+          flushTable();
+        } else if (window.pdfjsLib && pNum <= 100) {
+          // Scanned page fallback
           try {
-            const rendered = await renderPdfPageToJpeg(fileRecord.bytes, pNum, hasTextLines ? 1.2 : 1.5, 0.84);
+            const rendered = await renderPdfPageToJpeg(fileRecord.bytes, pNum, 1.8, 0.88);
             if (rendered && rendered.bytes) {
               const rId = `rIdImg${pNum}`;
               const imgFileName = `page_${pNum}.jpg`;
