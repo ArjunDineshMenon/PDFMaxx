@@ -14,7 +14,7 @@
   &nbsp;
   <img src="https://img.shields.io/badge/platform-Windows_10/11-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Platform" />
   &nbsp;
-  <img src="https://img.shields.io/badge/license-MIT-22C55E?style=for-the-badge" alt="License" />
+  <img src="https://img.shields.io/badge/license-Proprietary_(All_Rights_Reserved)-E11D48?style=for-the-badge" alt="License" />
 </p>
 
 <p align="center">
@@ -147,6 +147,6 @@ python desktop/build_standalone.py --dev
 
 ## 📄 License
 
-MIT License — see [LICENSE](LICENSE) for details.
+Proprietary (All Rights Reserved) — see [LICENSE](LICENSE) for details.
 
 Built by [Arjun Dinesh Menon](https://github.com/ArjunDineshMenon)
