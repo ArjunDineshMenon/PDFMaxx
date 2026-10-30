@@ -696,18 +696,26 @@
 
         case 'pdf-to-powerpoint':
           box.innerHTML = `
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label class="block font-semibold mb-1">Slide Layout Mode</label>
+                <select id="optPptLayout" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
+                  <option value="editable" selected>Full Slide Editable Presentation</option>
+                  <option value="visual">High-Resolution Visual Slides</option>
+                </select>
+              </div>
               <div>
                 <label class="block font-semibold mb-1">Slide Aspect Ratio</label>
                 <select id="optPptRatio" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
-                  <option value="16:9">Widescreen Presentation (16:9)</option>
+                  <option value="16:9" selected>Widescreen Presentation (16:9)</option>
                   <option value="4:3">Standard Deck (4:3)</option>
                 </select>
               </div>
               <div>
                 <label class="block font-semibold mb-1">Slide Theme Accent</label>
                 <select id="optPptTheme" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
-                  <option value="executive">Executive Slate &amp; Amber</option>
+                  <option value="executive" selected>Executive Slate &amp; Amber</option>
+                  <option value="tech">Modern Tech Sapphire</option>
                   <option value="minimal">Clean White Minimal</option>
                 </select>
               </div>

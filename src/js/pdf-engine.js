@@ -485,8 +485,8 @@
           }
         }
 
-        // Embed high-resolution page visual when page is scanned/image-based OR when "Maintain Exact Visual Layout" is selected
-        if ((!hasTextLines || includePageImages) && window.pdfjsLib && pNum <= 100) {
+        // Only embed full-page visual if the page has NO selectable text (i.e. scanned document or image-only page)
+        if (!hasTextLines && window.pdfjsLib && pNum <= 100) {
           try {
             const rendered = await renderPdfPageToJpeg(fileRecord.bytes, pNum, hasTextLines ? 1.2 : 1.5, 0.84);
             if (rendered && rendered.bytes) {

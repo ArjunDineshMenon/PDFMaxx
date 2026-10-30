@@ -87,7 +87,7 @@
                     : `<p style="font-family:Calibri,sans-serif;font-size:11pt;margin:0 0 6pt 0;white-space:pre-wrap;">${safe}</p>`;
                 }).join('\n');
               }
-              if ((!bodyHtml || includeVisualPages) && window.pdfjsLib && p <= 100) {
+              if (!bodyHtml && window.pdfjsLib && p <= 100) {
                 try {
                   const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 1.25, 0.84);
                   if (rendered && rendered.dataUrl) {
@@ -117,25 +117,143 @@ ${pagesHtml.join('\n')}
             outFilename = `${baseName}_slides.pptx`;
             const pptx = new window.PptxGenJS();
             const ratio = document.getElementById('optPptRatio')?.value || '16:9';
-            pptx.layout = ratio === '4:3' ? 'LAYOUT_4x3' : 'LAYOUT_16x9';
+            const theme = document.getElementById('optPptTheme')?.value || 'executive';
+            const layoutMode = document.getElementById('optPptLayout')?.value || 'editable';
+            const is169 = ratio === '16:9';
+            pptx.layout = is169 ? 'LAYOUT_16x9' : 'LAYOUT_4x3';
+
+            const slideW = 10.0;
+            const slideH = is169 ? 5.625 : 7.5;
+            const contentX = 0.8;
+            const contentW = 8.4;
+
+            // Professional theme palettes
+            const themeColors = {
+              executive: { title: '0F172A', accent: 'D97706', body: '334155', tblHdr: '1E293B', tblBg: 'F8FAFC' },
+              tech: { title: '1E40AF', accent: '3B82F6', body: '1E293B', tblHdr: '1E40AF', tblBg: 'EFF6FF' },
+              minimal: { title: '111827', accent: '64748B', body: '475569', tblHdr: '334155', tblBg: 'F8FAFC' }
+            };
+            const currentTheme = themeColors[theme] || themeColors.executive;
+
             const totalP = primaryFile.pageCount || 1;
             for (let p = 1; p <= totalP; p++) {
               runBtnText.textContent = `Building Slide ${p} of ${totalP}...`;
               const slide = pptx.addSlide();
               const pInfo = (primaryFile.pagesData && primaryFile.pagesData[p - 1]) || { lines: [], plainText: '' };
-              if (window.pdfjsLib && p <= 80) {
-                try {
-                  const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 1.3, 0.85);
-                  if (rendered && rendered.dataUrl) {
-                    slide.addImage({ data: rendered.dataUrl, x: 0.3, y: 0.25, w: 4.6, h: 5.1 });
-                  }
-                } catch (e) {}
+              const hasTextLines = pInfo.lines && pInfo.lines.length > 0;
+
+              // MODE A: Visual Slide mode OR page with zero selectable text
+              // Centers the high-resolution page cleanly on the slide (NO text splitting!)
+              if (layoutMode === 'visual' || !hasTextLines) {
+                if (window.pdfjsLib && p <= 80) {
+                  try {
+                    const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 1.5, 0.88);
+                    if (rendered && rendered.dataUrl) {
+                      const maxW = 8.8;
+                      const maxH = is169 ? 5.0 : 6.8;
+                      const imgRatio = rendered.width / Math.max(1, rendered.height);
+                      let w = maxW;
+                      let h = w / imgRatio;
+                      if (h > maxH) {
+                        h = maxH;
+                        w = h * imgRatio;
+                      }
+                      const x = (slideW - w) / 2;
+                      const y = (slideH - h) / 2;
+                      slide.addImage({ data: rendered.dataUrl, x, y, w, h });
+                    }
+                  } catch (e) {}
+                }
+              } else {
+                // MODE B: Full-Width Editable Presentation Slide (NO dual-rendering / NO split-page!)
+                // 1. Identify slide title
+                let titleText = '';
+                let otherLines = [];
+                const firstHdrIdx = pInfo.lines.findIndex(l => l.isHeading && l.text.trim().length > 2);
+                if (firstHdrIdx !== -1) {
+                  titleText = pInfo.lines[firstHdrIdx].text.trim();
+                  otherLines = pInfo.lines.filter((_, idx) => idx !== firstHdrIdx);
+                } else if (pInfo.lines.length > 0) {
+                  titleText = pInfo.lines[0].text.trim();
+                  otherLines = pInfo.lines.slice(1);
+                } else {
+                  titleText = `Page ${p} — ${baseName}`;
+                }
+                if (titleText.length > 95) {
+                  titleText = titleText.slice(0, 92) + '...';
+                }
+
+                // 2. Slide Title across FULL slide width
+                slide.addText(titleText, {
+                  x: contentX,
+                  y: 0.45,
+                  w: contentW,
+                  h: 0.65,
+                  fontSize: is169 ? 18 : 20,
+                  bold: true,
+                  color: currentTheme.title,
+                  valign: 'middle'
+                });
+
+                // 3. Separate table rows vs body text
+                const tableLines = otherLines.filter(l => l.cols && l.cols.length > 1);
+                const textLines = otherLines.filter(l => !l.cols || l.cols.length <= 1);
+
+                // If table detected, render as clean PptxGenJS table across full width
+                let curY = 1.25;
+                if (tableLines.length >= 2) {
+                  const tableData = tableLines.slice(0, 10).map((l, rIdx) => {
+                    return l.cols.map(c => ({
+                      text: String(c || '').trim(),
+                      options: {
+                        bold: rIdx === 0,
+                        fill: rIdx === 0 ? { color: currentTheme.tblHdr } : (rIdx % 2 === 1 ? { color: currentTheme.tblBg } : { color: 'FFFFFF' }),
+                        color: rIdx === 0 ? 'FFFFFF' : '1E293B',
+                        fontSize: 9.5
+                      }
+                    }));
+                  });
+                  slide.addTable(tableData, {
+                    x: contentX,
+                    y: curY,
+                    w: contentW,
+                    border: { pt: 0.5, color: 'E2E8F0' }
+                  });
+                  curY += Math.min(3.2, 0.35 * Math.min(10, tableLines.length) + 0.3);
+                }
+
+                // Render body paragraphs/bullets across the FULL slide width
+                const remainingH = (slideH - 0.5) - curY;
+                if (remainingH > 1.0 && textLines.length > 0) {
+                  const maxItems = is169 ? 10 : 14;
+                  const slideBodyText = textLines.slice(0, maxItems).map(l => {
+                    const clean = l.text.trim();
+                    return l.isHeading ? `\n${clean}` : `•  ${clean}`;
+                  }).join('\n').trim();
+
+                  slide.addText(slideBodyText, {
+                    x: contentX,
+                    y: curY,
+                    w: contentW,
+                    h: remainingH,
+                    fontSize: is169 ? 11 : 12,
+                    color: currentTheme.body,
+                    valign: 'top',
+                    wrap: true
+                  });
+                }
+
+                // 4. Clean bottom slide footer
+                slide.addText(`Slide ${p} of ${totalP}  |  ${baseName}`, {
+                  x: contentX,
+                  y: slideH - 0.45,
+                  w: contentW,
+                  h: 0.3,
+                  fontSize: 8.5,
+                  color: '94A3B8',
+                  align: 'right'
+                });
               }
-              const slideText = (pInfo.lines && pInfo.lines.length)
-                ? pInfo.lines.slice(0, 18).map(l => l.text).join('\n')
-                : `Slide ${p} of ${totalP} (${primaryFile.name})`;
-              slide.addText(`Page ${p} — ${baseName}`, { x: 5.1, y: 0.3, w: 4.6, h: 0.5, fontSize: 14, bold: true, color: '1E293B' });
-              slide.addText(slideText, { x: 5.1, y: 0.9, w: 4.6, h: 4.4, fontSize: 10, color: '334155', valign: 'top' });
             }
             const pptxBuf = await pptx.write('arraybuffer');
             outBytes = new Uint8Array(pptxBuf);
@@ -758,9 +876,10 @@ ${pagesHtml.join('\n')}
                 }
               }
 
-              // Embed any images extracted from DOCX word/media/*
+              // Embed real inline content images extracted from DOCX (filtering out any full-page replica screenshots)
               const docxImgs = (primaryFile.pagesData && primaryFile.pagesData[0]?.embeddedImages) || [];
-              for (const imgItem of docxImgs) {
+              const contentImgs = docxImgs.filter(img => !/^word\/media\/page_\d+\.(jpg|jpeg|png)$/i.test(img.name || ''));
+              for (const imgItem of contentImgs) {
                 try {
                   const emb = imgItem.isPng ? await outDoc.embedPng(imgItem.bytes) : await outDoc.embedJpg(imgItem.bytes);
                   const imgPage = outDoc.addPage([pWidth, pHeight]);
