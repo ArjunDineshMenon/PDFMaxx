@@ -9,3 +9,10 @@ desktop/_PDFMaxxDesktop_Generated.cs
 # OS files
 Thumbs.db
 .DS_Store
+
+# Mobile build artifacts
+android/.gradle/
+android/app/build/
+android/build/
+ios/App/Pods/
+ios/App/build/

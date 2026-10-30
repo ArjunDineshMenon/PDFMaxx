@@ -1128,7 +1128,9 @@
               const video = document.getElementById('cameraPreviewVideo');
               if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 try {
-                  state.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                  state.cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+                  });
                   video.srcObject = state.cameraStream;
                   video.classList.remove('hidden');
                   showToast('Camera active! Click "Simulate Instant Mobile Page Scan" or Process to capture.', tool.color);
@@ -1944,6 +1946,50 @@
           document.getElementById('directoryView').classList.remove('hidden');
         }
       });
+
+      // Mobile Native Share / Save to Device
+      const shareBtn = document.getElementById('shareResultBtn');
+      if (shareBtn) {
+        shareBtn.addEventListener('click', async () => {
+          if (!state.lastOutputBytes || !state.lastOutputFilename) return;
+          try {
+            // Check for Capacitor Share first (Android & iOS native)
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
+              await window.Capacitor.Plugins.Share.share({
+                title: state.lastOutputFilename,
+                text: 'Processed with PDFMaxx',
+                url: state.lastOutputBlobUrl,
+                dialogTitle: `Share ${state.lastOutputFilename}`
+              });
+              return;
+            }
+            // Standard Web Share API (Safari iOS, Chrome Android)
+            if (navigator.share && navigator.canShare) {
+              const mime = state.lastOutputFilename.endsWith('.pdf') ? 'application/pdf' :
+                          (state.lastOutputFilename.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+                          (state.lastOutputFilename.endsWith('.pptx') ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation' :
+                          (state.lastOutputFilename.endsWith('.xlsx') ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
+                          (state.lastOutputFilename.endsWith('.png') ? 'image/png' :
+                          (state.lastOutputFilename.endsWith('.webp') ? 'image/webp' : 'image/jpeg')))));
+
+              const file = new File([state.lastOutputBytes], state.lastOutputFilename, { type: mime });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                  files: [file],
+                  title: state.lastOutputFilename,
+                  text: 'Created with PDFMaxx'
+                });
+                return;
+              }
+            }
+            // Fallback: trigger standard download
+            const dl = document.getElementById('downloadResultLink');
+            if (dl) dl.click();
+          } catch (e) {
+            console.log('Share dismissed or cancelled:', e);
+          }
+        });
+      }
     }
 
     async function handleSelectedFiles(fileList) {

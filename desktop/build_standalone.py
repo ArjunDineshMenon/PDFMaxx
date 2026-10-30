@@ -80,6 +80,17 @@ def main():
     os.makedirs(DIST_DIR, exist_ok=True)
     with open(os.path.join(DIST_DIR, "index.html"), "w", encoding="utf-8") as f:
         f.write(bundled_html)
+
+    # Sync manifest and icons for mobile/PWA
+    manifest_src = os.path.join(SRC_DIR, "manifest.json")
+    if os.path.exists(manifest_src):
+        shutil.copy2(manifest_src, os.path.join(ROOT_DIR, "manifest.json"))
+        shutil.copy2(manifest_src, os.path.join(DIST_DIR, "manifest.json"))
+    icons_src = os.path.join(SRC_DIR, "icons")
+    if os.path.exists(icons_src):
+        shutil.copytree(icons_src, os.path.join(ROOT_DIR, "icons"), dirs_exist_ok=True)
+        shutil.copytree(icons_src, os.path.join(DIST_DIR, "icons"), dirs_exist_ok=True)
+
     html_size_kb = len(bundled_html.encode("utf-8")) / 1024
     print(f"        Bundled index.html: {html_size_kb:.0f} KB")
 

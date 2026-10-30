@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PDFMaxx</string>
+    <string name="title_activity_main">PDFMaxx</string>
+    <string name="package_name">com.arjundineshmenon.pdfmaxx</string>
+    <string name="custom_url_scheme">com.arjundineshmenon.pdfmaxx</string>
+</resources>

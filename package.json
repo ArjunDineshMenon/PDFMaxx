@@ -1,34 +1,33 @@
 {
   "name": "pdfmaxx",
   "version": "2.0.0",
-  "description": "PDFMaxx \u2014 All-in-One 32-Tool PDF Converter, Editor, Image & AI Desktop Suite",
+  "description": "PDFMaxx — 32-in-1 Private Client-Side PDF Converter, Editor & Mobile Suite",
   "main": "desktop/main.js",
   "scripts": {
-    "start": "electron .",
     "build": "python desktop/build_standalone.py",
     "build:standalone": "python desktop/build_standalone.py",
     "build:bundle": "python desktop/build_exe.py",
-    "build:win": "Build_and_Launch_PDFMaxx.bat",
-    "pack:electron": "electron-builder --win portable"
+    "mobile:prepare": "python desktop/build_standalone.py && npx cap sync",
+    "mobile:sync": "npx cap sync",
+    "mobile:android": "npx cap open android",
+    "mobile:ios": "npx cap open ios",
+    "mobile:run:android": "npx cap run android",
+    "mobile:run:ios": "npx cap run ios"
   },
   "author": "Arjun Dinesh Menon",
   "license": "UNLICENSED",
-  "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/camera": "^6.1.2",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/filesystem": "^6.0.2",
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/share": "^6.0.2",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2"
   },
-  "build": {
-    "appId": "com.arjundineshmenon.pdfmaxx",
-    "productName": "PDFMaxx",
-    "files": [
-      "src/**/*",
-      "desktop/**/*",
-      "index.html",
-      "package.json"
-    ],
-    "win": {
-      "target": "portable",
-      "artifactName": "PDFMaxx.exe"
-    }
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
   }
 }
