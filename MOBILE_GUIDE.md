@@ -105,9 +105,22 @@ This repository contains the complete native mobile project configuration powere
 
 ---
 
-## 🌐 Instant Mobile Testing (PWA Mode)
-If you want to test on your phone **right now** without opening Android Studio or Xcode:
-1. Deploy this repository to **GitHub Pages** (Settings → Pages → Source: `main` branch, root `/`).
-2. Open your GitHub Pages URL in **Chrome (Android)** or **Safari (iOS)**.
-3. Tap **"Add to Home Screen"**.
-4. PDFMaxx opens in full-screen native app mode with offline processing!
+## 🌐 Instant Mobile Access & Installation (PWA Mode)
+You can run and install PDFMaxx on any **Android phone, iPhone, iPad, tablet, or Chromebook immediately** without waiting for App Store reviews:
+
+1. **Automatic GitHub Pages Deployment**:
+   Every push to `main` automatically builds and deploys the latest PWA via [`.github/workflows/deploy-pwa.yml`](.github/workflows/deploy-pwa.yml).
+   - In your GitHub repo: go to **Settings** → **Pages** → under **Build and deployment**, select **GitHub Actions**.
+   - Your live app URL will be: `https://<your-github-username>.github.io/PDFMaxx/`
+2. **One-Tap Install on Android**:
+   - Open your GitHub Pages link in Chrome or Edge on Android.
+   - Tap the **"Install App"** button in the top navigation header (or choose "Install App" from Chrome's menu).
+   - PDFMaxx will be added to your home screen with its official icon, launching in full-screen standalone mode.
+3. **One-Tap Install on iPhone & iPad**:
+   - Open your GitHub Pages link in Safari on iOS.
+   - Tap the **"Install App"** button (or tap Safari's Share button ⎋).
+   - Choose **"Add to Home Screen"** ⊕ and tap **Add**.
+4. **100% Offline Capability**:
+   - Thanks to the Service Worker (`sw.js`), all 32 tools, styling, scripts, and libraries are cached locally.
+   - Once loaded once, you can turn on Airplane Mode and use all 32 PDF and image tools completely offline!
+

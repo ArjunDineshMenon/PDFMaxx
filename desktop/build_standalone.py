@@ -22,6 +22,7 @@ ICO_PATH = os.path.join(DESKTOP_DIR, "pdfmaxx.ico")
 EXE_OUTPUT = os.path.join(ROOT_DIR, "PDFMaxx.exe")
 
 DEV_MODE = "--dev" in sys.argv
+WEB_ONLY = "--web-only" in sys.argv or "--pwa-only" in sys.argv
 
 def step(num, total, msg):
     print(f"  [{num}/{total}] {msg}")
@@ -81,18 +82,32 @@ def main():
     with open(os.path.join(DIST_DIR, "index.html"), "w", encoding="utf-8") as f:
         f.write(bundled_html)
 
-    # Sync manifest and icons for mobile/PWA
+    # Sync manifest, service worker and icons for mobile/PWA
     manifest_src = os.path.join(SRC_DIR, "manifest.json")
     if os.path.exists(manifest_src):
         shutil.copy2(manifest_src, os.path.join(ROOT_DIR, "manifest.json"))
         shutil.copy2(manifest_src, os.path.join(DIST_DIR, "manifest.json"))
+    sw_src = os.path.join(SRC_DIR, "sw.js")
+    if os.path.exists(sw_src):
+        shutil.copy2(sw_src, os.path.join(ROOT_DIR, "sw.js"))
+        shutil.copy2(sw_src, os.path.join(DIST_DIR, "sw.js"))
     icons_src = os.path.join(SRC_DIR, "icons")
     if os.path.exists(icons_src):
         shutil.copytree(icons_src, os.path.join(ROOT_DIR, "icons"), dirs_exist_ok=True)
         shutil.copytree(icons_src, os.path.join(DIST_DIR, "icons"), dirs_exist_ok=True)
 
+    # Add .nojekyll for GitHub Pages
+    with open(os.path.join(ROOT_DIR, ".nojekyll"), "w") as f:
+        pass
+    with open(os.path.join(DIST_DIR, ".nojekyll"), "w") as f:
+        pass
+
     html_size_kb = len(bundled_html.encode("utf-8")) / 1024
     print(f"        Bundled index.html: {html_size_kb:.0f} KB")
+
+    if WEB_ONLY:
+        print("\n  [Done] Web and PWA assets bundled into root and dist/ successfully!")
+        return
 
     # Step 2: Generate C# with embedded HTML
     if not DEV_MODE:

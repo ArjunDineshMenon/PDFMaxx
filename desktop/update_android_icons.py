@@ -27,3 +27,4 @@ for folder, size in mipmap_sizes.items():
         print(f"Updated {folder} ({size}x{size})")
 
 print("Android launcher icons updated successfully!")
+

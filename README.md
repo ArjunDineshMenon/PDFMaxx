@@ -169,6 +169,30 @@ npm run mobile:ios
 
 ---
 
+## 📱 Mobile App (Android & iOS)
+
+PDFMaxx includes a native mobile implementation powered by **Capacitor 6** and **Ionic**:
+
+- **Package ID**: `com.arjundineshmenon.pdfmaxx`
+- **Native Android Project**: [`android/`](android/) (Google Play Store ready)
+- **Native iOS Project**: [`ios/`](ios/) (Apple App Store ready)
+- **Native Plugins**: Document Camera Scanner, Native Share Sheet, Device Filesystem, Status Bar & Splash Screen
+
+```bash
+# Sync web build to native Android and iOS projects
+npm run mobile:prepare
+
+# Open in Android Studio
+npm run mobile:android
+
+# Open in Xcode (on macOS)
+npm run mobile:ios
+```
+
+📖 **Detailed step-by-step instructions for publishing to Google Play and Apple App Store**: [**Mobile Deployment Guide (`MOBILE_GUIDE.md`)**](MOBILE_GUIDE.md)
+
+---
+
 ## 📄 License
 
 Proprietary (All Rights Reserved) — see [LICENSE](LICENSE) for details.

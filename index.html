@@ -43,6 +43,10 @@
     <style>
 /* PDFMaxx — Theme Variables, Dark/White Mode & Card Styles */
 :root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
   --bg-page: #F8FAFC;
   --bg-surface: #FFFFFF;
   --bg-elevated: #F1F5F9;
@@ -66,6 +70,14 @@ body {
   color: var(--text-primary);
   transition: background-color 0.22s ease, color 0.22s ease;
   overflow-x: hidden;
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+  padding-bottom: var(--sab);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+header {
+  padding-top: var(--sat);
 }
 .tool-card {
   position: relative;
@@ -152,8 +164,17 @@ body {
         </button>
       </nav>
 
-      <!-- Right Controls: White/Dark Mode Toggle -->
+      <!-- Right Controls: White/Dark Mode Toggle & PWA Install -->
       <div class="flex items-center gap-2.5">
+
+        <!-- Install App Button (PWA / Mobile) -->
+        <button id="pwaInstallBtn" type="button" aria-label="Install PDFMaxx App" class="hidden inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-sm transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span class="hidden sm:inline">Install App</span>
+          <span class="sm:hidden">Install</span>
+        </button>
 
         <!-- Theme Switcher (White Mode / Dark Mode) -->
         <button id="themeToggleBtn" type="button" aria-label="Toggle White and Dark Mode" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm hover:opacity-90 transition-all">
@@ -491,6 +512,32 @@ body {
     </section>
 
   </main>
+
+  <!-- iOS Install Instructions Modal -->
+  <div id="iosInstallModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-gray-700 text-slate-800 dark:text-slate-100 space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-rose-500 text-white flex items-center justify-center font-bold text-sm">P</div>
+          <h3 class="font-bold text-base">Install PDFMaxx</h3>
+        </div>
+        <button id="closeIosInstallModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="text-xs text-slate-600 dark:text-slate-300">
+        Install PDFMaxx on your iPhone or iPad for 100% offline access and full-screen experience:
+      </p>
+      <ol class="text-xs space-y-2.5 text-slate-600 dark:text-slate-300 list-decimal pl-4">
+        <li>Tap the <strong class="text-slate-900 dark:text-white">Share button</strong> (the square with an arrow pointing up <span class="text-base leading-none">⎋</span>) at the bottom of Safari.</li>
+        <li>Scroll down the share sheet and tap <strong class="text-slate-900 dark:text-white">"Add to Home Screen"</strong> (<span class="text-base leading-none">⊕</span>).</li>
+        <li>Tap <strong class="text-slate-900 dark:text-white">"Add"</strong> at top-right. PDFMaxx will appear on your Home Screen!</li>
+      </ol>
+      <button id="gotItIosInstallBtn" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors">
+        Got it!
+      </button>
+    </div>
+  </div>
 
   <!-- Toast Notification -->
   <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-200">
@@ -5259,6 +5306,83 @@ ${pagesHtml.join('\n')}
           } catch (e) {
             console.log('Share dismissed or cancelled:', e);
           }
+        });
+      }
+
+      setupPWA();
+    }
+
+    function setupPWA() {
+      const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+      const iosModal = document.getElementById('iosInstallModal');
+      const closeIosBtn = document.getElementById('closeIosInstallModal');
+      const gotItIosBtn = document.getElementById('gotItIosInstallBtn');
+
+      let deferredPrompt = null;
+
+      // Listen for browser install prompt (Android Chrome, Edge, Chromium)
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (pwaInstallBtn) {
+          pwaInstallBtn.classList.remove('hidden');
+        }
+      });
+
+      // Check for iOS Safari (PWA installable via Add to Home Screen)
+      const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      if (isIos && !isStandalone && pwaInstallBtn) {
+        pwaInstallBtn.classList.remove('hidden');
+      }
+
+      if (pwaInstallBtn) {
+        pwaInstallBtn.addEventListener('click', async () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+              pwaInstallBtn.classList.add('hidden');
+              showToast('Thank you for installing PDFMaxx!', '#10B981');
+            }
+            deferredPrompt = null;
+          } else if (isIos && !isStandalone && iosModal) {
+            iosModal.classList.remove('hidden');
+            iosModal.classList.add('flex');
+          } else {
+            showToast('PDFMaxx is ready for offline use or already installed.', '#3B82F6');
+          }
+        });
+      }
+
+      const hideIosModal = () => {
+        if (iosModal) {
+          iosModal.classList.add('hidden');
+          iosModal.classList.remove('flex');
+        }
+      };
+
+      if (closeIosBtn) closeIosBtn.addEventListener('click', hideIosModal);
+      if (gotItIosBtn) gotItIosBtn.addEventListener('click', hideIosModal);
+      if (iosModal) {
+        iosModal.addEventListener('click', (e) => {
+          if (e.target === iosModal) hideIosModal();
+        });
+      }
+
+      window.addEventListener('appinstalled', () => {
+        if (pwaInstallBtn) pwaInstallBtn.classList.add('hidden');
+        showToast('PDFMaxx was installed successfully!', '#10B981');
+      });
+
+      // Register Service Worker for offline PWA operation
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').then((reg) => {
+            console.log('PDFMaxx PWA Service Worker registered:', reg.scope);
+          }).catch((err) => {
+            console.warn('PDFMaxx Service Worker registration skipped:', err);
+          });
         });
       }
     }

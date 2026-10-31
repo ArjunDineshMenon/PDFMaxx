@@ -1990,6 +1990,83 @@
           }
         });
       }
+
+      setupPWA();
+    }
+
+    function setupPWA() {
+      const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+      const iosModal = document.getElementById('iosInstallModal');
+      const closeIosBtn = document.getElementById('closeIosInstallModal');
+      const gotItIosBtn = document.getElementById('gotItIosInstallBtn');
+
+      let deferredPrompt = null;
+
+      // Listen for browser install prompt (Android Chrome, Edge, Chromium)
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (pwaInstallBtn) {
+          pwaInstallBtn.classList.remove('hidden');
+        }
+      });
+
+      // Check for iOS Safari (PWA installable via Add to Home Screen)
+      const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      if (isIos && !isStandalone && pwaInstallBtn) {
+        pwaInstallBtn.classList.remove('hidden');
+      }
+
+      if (pwaInstallBtn) {
+        pwaInstallBtn.addEventListener('click', async () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+              pwaInstallBtn.classList.add('hidden');
+              showToast('Thank you for installing PDFMaxx!', '#10B981');
+            }
+            deferredPrompt = null;
+          } else if (isIos && !isStandalone && iosModal) {
+            iosModal.classList.remove('hidden');
+            iosModal.classList.add('flex');
+          } else {
+            showToast('PDFMaxx is ready for offline use or already installed.', '#3B82F6');
+          }
+        });
+      }
+
+      const hideIosModal = () => {
+        if (iosModal) {
+          iosModal.classList.add('hidden');
+          iosModal.classList.remove('flex');
+        }
+      };
+
+      if (closeIosBtn) closeIosBtn.addEventListener('click', hideIosModal);
+      if (gotItIosBtn) gotItIosBtn.addEventListener('click', hideIosModal);
+      if (iosModal) {
+        iosModal.addEventListener('click', (e) => {
+          if (e.target === iosModal) hideIosModal();
+        });
+      }
+
+      window.addEventListener('appinstalled', () => {
+        if (pwaInstallBtn) pwaInstallBtn.classList.add('hidden');
+        showToast('PDFMaxx was installed successfully!', '#10B981');
+      });
+
+      // Register Service Worker for offline PWA operation
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').then((reg) => {
+            console.log('PDFMaxx PWA Service Worker registered:', reg.scope);
+          }).catch((err) => {
+            console.warn('PDFMaxx Service Worker registration skipped:', err);
+          });
+        });
+      }
     }
 
     async function handleSelectedFiles(fileList) {

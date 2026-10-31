@@ -1,5 +1,9 @@
 /* PDFMaxx — Theme Variables, Dark/White Mode & Card Styles */
 :root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
   --bg-page: #F8FAFC;
   --bg-surface: #FFFFFF;
   --bg-elevated: #F1F5F9;
@@ -23,6 +27,14 @@ body {
   color: var(--text-primary);
   transition: background-color 0.22s ease, color 0.22s ease;
   overflow-x: hidden;
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+  padding-bottom: var(--sab);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+header {
+  padding-top: var(--sat);
 }
 .tool-card {
   position: relative;

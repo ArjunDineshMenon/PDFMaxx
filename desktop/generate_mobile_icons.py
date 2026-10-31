@@ -64,3 +64,4 @@ if not loaded:
     img512 = generate_brand_icon(512)
     img512.save(os.path.join(icons_dir, 'icon-512.png'), 'PNG')
     print("Generated brand icons 192x192 and 512x512 successfully")
+
