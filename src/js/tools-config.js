@@ -13,7 +13,7 @@
         category: 'Organize',
         color: '#E11D48', // Crimson Rose
         badgeBg: 'rgba(225, 29, 72, 0.12)',
-        accept: '.pdf',
+        accept: '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/>'
@@ -61,7 +61,7 @@
         category: 'Convert from PDF',
         color: '#2563EB', // Royal Blue
         badgeBg: 'rgba(37, 99, 235, 0.12)',
-        accept: '.pdf',
+        accept: '.pdf,.doc,.docx',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'
@@ -73,7 +73,7 @@
         category: 'Convert from PDF',
         color: '#D97706', // Warm Amber
         badgeBg: 'rgba(217, 119, 6, 0.12)',
-        accept: '.pdf',
+        accept: '.pdf,.ppt,.pptx',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>'
@@ -85,7 +85,7 @@
         category: 'Convert from PDF',
         color: '#059669', // Forest Jade
         badgeBg: 'rgba(5, 150, 105, 0.12)',
-        accept: '.pdf',
+        accept: '.pdf,.xls,.xlsx,.csv',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>'
@@ -97,7 +97,7 @@
         category: 'Convert to PDF',
         color: '#1D4ED8', // Cobalt Blue
         badgeBg: 'rgba(29, 78, 216, 0.12)',
-        accept: '.doc,.docx,.txt,.rtf',
+        accept: '.doc,.docx,.pdf,.txt,.rtf',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>'
@@ -109,7 +109,7 @@
         category: 'Convert to PDF',
         color: '#C2410C', // Rust Terracotta
         badgeBg: 'rgba(194, 65, 12, 0.12)',
-        accept: '.ppt,.pptx,.txt',
+        accept: '.ppt,.pptx,.pdf,.txt',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>'
@@ -121,7 +121,7 @@
         category: 'Convert to PDF',
         color: '#15803D', // Deep Leaf Green
         badgeBg: 'rgba(21, 128, 61, 0.12)',
-        accept: '.xls,.xlsx,.csv',
+        accept: '.xls,.xlsx,.csv,.pdf',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'
@@ -145,7 +145,7 @@
         category: 'Convert from PDF',
         color: '#CA8A04', // Goldenrod Yellow
         badgeBg: 'rgba(202, 138, 4, 0.12)',
-        accept: '.pdf',
+        accept: '.pdf,.jpg,.jpeg,.png,.webp',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>'
@@ -157,7 +157,7 @@
         category: 'Convert to PDF',
         color: '#EAB308', // Marigold Gold
         badgeBg: 'rgba(234, 179, 8, 0.14)',
-        accept: '.jpg,.jpeg,.png,.webp',
+        accept: '.jpg,.jpeg,.png,.webp,.pdf',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>'
@@ -205,7 +205,7 @@
         category: 'Convert to PDF',
         color: '#0284C7', // Cerulean Sky
         badgeBg: 'rgba(2, 132, 199, 0.12)',
-        accept: '.html,.htm,.txt',
+        accept: '.html,.htm,.pdf,.txt',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>'
@@ -385,7 +385,7 @@
         category: 'AI & Smart',
         color: '#475569', // Slate Graphite
         badgeBg: 'rgba(71, 85, 105, 0.14)',
-        accept: '.pdf,.txt',
+        accept: '.pdf,.md,.markdown,.txt',
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>'

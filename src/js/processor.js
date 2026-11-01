@@ -16,6 +16,53 @@
       const { PDFDocument, StandardFonts, rgb, degrees } = window.PDFLib || {};
       const primaryFile = targetFiles[0];
       const baseName = (primaryFile.name || 'document').replace(/\.[^.]+$/, '');
+      const fileExt = (primaryFile.ext || '').toLowerCase();
+
+      // Check if this file is ALREADY in the target format for this conversion tool.
+      // If so, preserve it 100% intact in its exact original byte form!
+      const targetFormatChecks = {
+        'powerpoint-to-pdf': ['pdf'],
+        'word-to-pdf': ['pdf'],
+        'excel-to-pdf': ['pdf'],
+        'html-to-pdf': ['pdf'],
+        'jpg-to-pdf': ['pdf'],
+        'pdf-to-word': ['docx', 'doc'],
+        'pdf-to-powerpoint': ['pptx', 'ppt'],
+        'pdf-to-excel': ['xlsx', 'xls', 'csv'],
+        'pdf-to-jpg': ['jpg', 'jpeg'],
+        'pdf-to-markdown': ['md', 'markdown']
+      };
+
+      const matchingTargetExts = targetFormatChecks[tool.id];
+      if (matchingTargetExts && matchingTargetExts.includes(fileExt)) {
+        const mimeMap = {
+          pdf: 'application/pdf',
+          docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          doc: 'application/msword',
+          pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          ppt: 'application/vnd.ms-powerpoint',
+          xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          xls: 'application/vnd.ms-excel',
+          csv: 'text/csv',
+          jpg: 'image/jpeg',
+          jpeg: 'image/jpeg',
+          md: 'text/markdown',
+          markdown: 'text/markdown'
+        };
+        const passMime = mimeMap[fileExt] || 'application/octet-stream';
+        const passName = primaryFile.name;
+        const typeLabel = fileExt.toUpperCase();
+
+        return {
+          bytes: primaryFile.bytes,
+          mime: passMime,
+          ext: fileExt,
+          filename: passName,
+          summary: `${primaryFile.name} is already a ${typeLabel} document — preserved in exact original form without changes.`,
+          richText: `[PRESERVED ORIGINAL ${typeLabel} FILE]\nFilename: ${primaryFile.name}\nSize: ${formatBytes(primaryFile.size || primaryFile.bytes.length)}\nStatus: Already in ${typeLabel} format; original document preserved 100% intact.`,
+          isAlreadyTarget: true
+        };
+      }
 
       // Ensure full PDF.js extraction has run if the file is a PDF and pagesData is empty
       if (primaryFile.ext === 'pdf' && (!primaryFile.pagesData || primaryFile.pagesData.length === 0) && window.pdfjsLib) {
@@ -1353,7 +1400,8 @@ ${pagesHtml.join('\n')}
                 index: i + 1,
                 inputName: fileItem.name,
                 outputName: `${res.subFiles.length} files (${res.filename})`,
-                outSize: res.bytes ? res.bytes.length : 0
+                outSize: res.bytes ? res.bytes.length : 0,
+                status: res.isAlreadyTarget ? 'Preserved (Original)' : 'Converted'
               });
             } else {
               let targetName = res.filename;
@@ -1374,7 +1422,8 @@ ${pagesHtml.join('\n')}
                 index: i + 1,
                 inputName: fileItem.name,
                 outputName: targetName,
-                outSize: res.bytes.length
+                outSize: res.bytes.length,
+                status: res.isAlreadyTarget ? 'Preserved (Original)' : 'Converted'
               });
             }
 
@@ -1384,32 +1433,40 @@ ${pagesHtml.join('\n')}
             }
           }
 
-          setProgress('Packaging converted files into ZIP folder...');
+          setProgress('Packaging files into ZIP folder...');
           const zipBytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
           outBytes = zipBytes;
           outMime = 'application/zip';
           outExt = 'zip';
 
+          const convertedCount = manifestRows.filter(r => r.status === 'Converted').length;
+          const preservedCount = manifestRows.filter(r => r.status !== 'Converted').length;
+          const detailStr = preservedCount > 0
+            ? `(${convertedCount} converted, ${preservedCount} preserved in exact original form)`
+            : `(all ${totalFiles} converted)`;
+
           const cleanToolName = tool.title.replace(/[^a-zA-Z0-9]/g, '_');
           outFilename = `PDFMaxx_${cleanToolName}_${totalFiles}_Files.zip`;
-          resultSummary = `Successfully converted all ${totalFiles} files into ${tool.title} format and packaged them into a single ZIP archive (${formatBytes(zipBytes.length)}).`;
+          resultSummary = `Processed ${totalFiles} files ${detailStr} into a single ZIP archive (${formatBytes(zipBytes.length)}).`;
 
           // Generate detailed manifest report for the result card
           const reportLines = [
-            `PDFMaxx Batch Conversion Report`,
+            `PDFMaxx Batch Processing Manifest`,
             `================================================================================`,
             `Tool Applied:       ${tool.title}`,
-            `Files Converted:    ${totalFiles}`,
+            `Files Processed:    ${totalFiles} ${detailStr}`,
             `Output ZIP Archive: ${outFilename} (${formatBytes(zipBytes.length)})`,
             `Total Output Size:  ${formatBytes(totalOutBytes)} (uncompressed sum)`,
             `--------------------------------------------------------------------------------`,
-            `#  | Input File                      | Converted Output File            | Size`,
+            `#  | Input File                      | Output File                      | Size       | Status`,
             `--------------------------------------------------------------------------------`
           ];
           for (const row of manifestRows) {
-            const inN = (row.inputName.length > 30 ? row.inputName.slice(0, 27) + '...' : row.inputName).padEnd(31);
-            const outN = (row.outputName.length > 32 ? row.outputName.slice(0, 29) + '...' : row.outputName).padEnd(33);
-            reportLines.push(`${String(row.index).padStart(2)} | ${inN} | ${outN} | ${formatBytes(row.outSize).padStart(10)}`);
+            const inN = (row.inputName.length > 28 ? row.inputName.slice(0, 25) + '...' : row.inputName).padEnd(29);
+            const outN = (row.outputName.length > 30 ? row.outputName.slice(0, 27) + '...' : row.outputName).padEnd(31);
+            const sizeStr = formatBytes(row.outSize).padStart(10);
+            const statStr = (row.status || 'Converted').padEnd(18);
+            reportLines.push(`${String(row.index).padStart(2)} | ${inN} | ${outN} | ${sizeStr} | ${statStr}`);
           }
           reportLines.push(`--------------------------------------------------------------------------------`);
           reportLines.push(`Extract this ZIP folder on your device to access all your converted files.`);
