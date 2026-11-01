@@ -4,52 +4,39 @@
 // =========================================================================
     // 8. REAL FILE PROCESSING ENGINE FOR ALL 31 FEATURES
     // =========================================================================
-    async function executeActiveTool() {
-      const tool = TOOLS.find(t => t.id === state.activeToolId) || TOOLS[0];
-      if (state.inspectPromise) {
-        await state.inspectPromise;
-      }
-      if (state.files.length === 0) {
-        if (tool.id === 'html-to-pdf') {
-          await loadSampleFilesForCurrentTool(true);
-        } else {
-          showToast('Please select or drop your file first!', '#E11D48');
-          document.getElementById('fileInput').click();
-          return;
+    /**
+     * Executes the conversion/processing algorithm for a specific file or group of files.
+     */
+    async function processToolOnFiles(tool, targetFiles, setProgress) {
+      const runBtnText = {
+        set textContent(val) {
+          if (setProgress) setProgress(val);
+        }
+      };
+      const { PDFDocument, StandardFonts, rgb, degrees } = window.PDFLib || {};
+      const primaryFile = targetFiles[0];
+      const baseName = (primaryFile.name || 'document').replace(/\.[^.]+$/, '');
+
+      // Ensure full PDF.js extraction has run if the file is a PDF and pagesData is empty
+      if (primaryFile.ext === 'pdf' && (!primaryFile.pagesData || primaryFile.pagesData.length === 0) && window.pdfjsLib) {
+        const extracted = await extractFullPdfWithPdfJs(primaryFile.bytes, primaryFile.name, (cur, tot) => {
+          runBtnText.textContent = `Reading Page ${cur} of ${tot}...`;
+        });
+        if (extracted) {
+          primaryFile.pageCount = extracted.pageCount;
+          primaryFile.pagesData = extracted.pagesData;
+          primaryFile.extractedText = extracted.extractedText;
+          primaryFile.tables = extracted.tables;
         }
       }
 
-      const runBtn = document.getElementById('runToolActionBtn');
-      const runBtnText = document.getElementById('runToolActionBtnText');
-      runBtn.disabled = true;
-      runBtnText.textContent = `Processing ${tool.title}...`;
-      state.lastOutputDataUrl = null;
-      state.lastOutputImageBadge = '';
-
-      try {
-        const { PDFDocument, StandardFonts, rgb, degrees } = window.PDFLib || {};
-        const primaryFile = state.files[0];
-        const baseName = (primaryFile.name || 'document').replace(/\.[^.]+$/, '');
-
-        // Ensure full PDF.js extraction has run if the file is a PDF and pagesData is empty
-        if (primaryFile.ext === 'pdf' && (!primaryFile.pagesData || primaryFile.pagesData.length === 0) && window.pdfjsLib) {
-          const extracted = await extractFullPdfWithPdfJs(primaryFile.bytes, primaryFile.name, (cur, tot) => {
-            runBtnText.textContent = `Reading Page ${cur} of ${tot}...`;
-          });
-          if (extracted) {
-            primaryFile.pageCount = extracted.pageCount;
-            primaryFile.pagesData = extracted.pagesData;
-            primaryFile.extractedText = extracted.extractedText;
-            primaryFile.tables = extracted.tables;
-          }
-        }
-
-        let outBytes = null;
-        let outMime = 'application/pdf';
-        let outExt = 'pdf';
-        let outFilename = `${baseName}_${tool.id}.pdf`;
-        let resultSummary = '';
-        let richTextPreview = '';
+      let outBytes = null;
+      let outMime = 'application/pdf';
+      let outExt = 'pdf';
+      let outFilename = `${baseName}_${tool.id}.pdf`;
+      let resultSummary = '';
+      let richTextPreview = '';
+      let outSubFiles = null;
 
         // -------------------------------------------------------------------
         // A. NON-PDF TARGET FORMAT CONVERSIONS (Word, PPTX, XLSX, JPG, MD)
@@ -415,11 +402,14 @@ ${pagesHtml.join('\n')}
             resultSummary = `Rendered Page 1 into a high-resolution JPG (${rendered.width}×${rendered.height} px).`;
           } else if (window.pdfjsLib && window.JSZip) {
             const zip = new window.JSZip();
+            outSubFiles = [];
             for (let p = 1; p <= totalP; p++) {
               runBtnText.textContent = `Rendering Page ${p} of ${totalP} to JPG...`;
               const rendered = await renderPdfPageToJpeg(primaryFile.bytes, p, 1.65, quality);
               if (rendered && rendered.bytes) {
-                zip.file(`${baseName}_page_${String(p).padStart(3, '0')}.jpg`, rendered.bytes);
+                const subName = `${baseName}_page_${String(p).padStart(3, '0')}.jpg`;
+                zip.file(subName, rendered.bytes);
+                outSubFiles.push({ filename: subName, bytes: rendered.bytes });
               }
             }
             outExt = 'zip';
@@ -454,7 +444,7 @@ ${pagesHtml.join('\n')}
             bgColor: '#FFFFFF'
           };
 
-          const totalFiles = state.files.length;
+          const totalFiles = targetFiles.length;
           if (totalFiles === 1) {
             runBtnText.textContent = `Compressing ${primaryFile.name}...`;
             const comp = await compressSingleImageFile(primaryFile, options);
@@ -490,6 +480,7 @@ ${pagesHtml.join('\n')}
             // Batch compression of multiple images
             if (!window.JSZip) throw new Error('Zip compression engine unavailable');
             const zip = new window.JSZip();
+            outSubFiles = [];
             const reportLines = [
               `Batch Image Compression Report`,
               `Total Images Processed: ${totalFiles}`,
@@ -501,14 +492,16 @@ ${pagesHtml.join('\n')}
             let totalComp = 0;
 
             for (let i = 0; i < totalFiles; i++) {
-              const fileItem = state.files[i];
+              const fileItem = targetFiles[i];
               runBtnText.textContent = `Compressing ${i + 1}/${totalFiles}: ${fileItem.name}...`;
               const comp = await compressSingleImageFile(fileItem, options);
               totalOrig += fileItem.size;
               totalComp += comp.compressedSize;
 
               const cleanBase = (fileItem.name || `image_${i + 1}`).replace(/\.[^.]+$/, '');
-              zip.file(`${cleanBase}_compressed.${comp.ext}`, comp.bytes);
+              const subName = `${cleanBase}_compressed.${comp.ext}`;
+              zip.file(subName, comp.bytes);
+              outSubFiles.push({ filename: subName, bytes: comp.bytes });
 
               const padName = (fileItem.name.length > 30 ? fileItem.name.slice(0, 27) + '...' : fileItem.name).padEnd(31);
               reportLines.push(
@@ -720,7 +713,7 @@ ${pagesHtml.join('\n')}
           const fontReg = await outDoc.embedFont(StandardFonts.Helvetica);
 
           if (tool.id === 'merge-pdf') {
-            for (const f of state.files) {
+            for (const f of targetFiles) {
               try {
                 const srcDoc = await PDFDocument.load(f.bytes, { ignoreEncryption: true });
                 const activeMeta = (f.pagesMeta && f.pagesMeta.length)
@@ -744,7 +737,7 @@ ${pagesHtml.join('\n')}
             outDoc.setTitle(titleVal);
             outFilename = `${titleVal}.pdf`;
             outBytes = await outDoc.save();
-            resultSummary = `Combined ${state.files.length} PDF files (${outDoc.getPageCount()} total pages) in your exact specified order.`;
+            resultSummary = `Combined ${targetFiles.length} PDF files (${outDoc.getPageCount()} total pages) in your exact specified order.`;
           }
 
           else if (tool.id === 'split-pdf') {
@@ -755,13 +748,16 @@ ${pagesHtml.join('\n')}
 
             if (mode === 'zip_all' && window.JSZip) {
               const zip = new window.JSZip();
+              outSubFiles = [];
               for (let i = 0; i < total; i++) {
                 runBtnText.textContent = `Splitting Page ${i + 1} of ${total}...`;
                 const singleDoc = await PDFDocument.create();
                 const [copiedPage] = await singleDoc.copyPages(srcDoc, [i]);
                 singleDoc.addPage(copiedPage);
                 const singleBytes = await singleDoc.save();
-                zip.file(`${baseName}_page_${String(i + 1).padStart(3, '0')}.pdf`, singleBytes);
+                const subName = `${baseName}_page_${String(i + 1).padStart(3, '0')}.pdf`;
+                zip.file(subName, singleBytes);
+                outSubFiles.push({ filename: subName, bytes: singleBytes });
               }
               outExt = 'zip';
               outMime = 'application/zip';
@@ -831,9 +827,9 @@ ${pagesHtml.join('\n')}
             const pWidth = isLandscape ? 792 : 612;
             const pHeight = isLandscape ? 612 : 792;
 
-            for (let i = 0; i < state.files.length; i++) {
-              const f = state.files[i];
-              runBtnText.textContent = `Embedding Image ${i + 1} of ${state.files.length}...`;
+            for (let i = 0; i < targetFiles.length; i++) {
+              const f = targetFiles[i];
+              runBtnText.textContent = `Embedding Image ${i + 1} of ${targetFiles.length}...`;
               if (f.ext === 'pdf') {
                 const srcPdf = await PDFDocument.load(f.bytes, { ignoreEncryption: true });
                 const copied = await outDoc.copyPages(srcPdf, srcPdf.getPageIndices());
@@ -857,7 +853,7 @@ ${pagesHtml.join('\n')}
             }
             outFilename = `${baseName}_${tool.id === 'scan-to-pdf' ? 'scanned' : 'images'}.pdf`;
             outBytes = await outDoc.save();
-            resultSummary = `Compiled ${state.files.length} file(s) into a ${outDoc.getPageCount()}-page PDF document.`;
+            resultSummary = `Compiled ${targetFiles.length} file(s) into a ${outDoc.getPageCount()}-page PDF document.`;
           }
 
           else if (['word-to-pdf', 'powerpoint-to-pdf', 'excel-to-pdf', 'html-to-pdf'].includes(tool.id)) {
@@ -978,8 +974,8 @@ ${pagesHtml.join('\n')}
           }
 
           else if (tool.id === 'compare-pdf') {
-            const f1 = state.files[0];
-            const f2 = state.files[1] || state.files[0];
+            const f1 = targetFiles[0];
+            const f2 = targetFiles[1] || targetFiles[0];
             if (f2.ext === 'pdf' && (!f2.pagesData || f2.pagesData.length === 0) && window.pdfjsLib) {
               const ext2 = await extractFullPdfWithPdfJs(f2.bytes, f2.name);
               if (ext2) {
@@ -1258,6 +1254,168 @@ ${pagesHtml.join('\n')}
           resultSummary = `${tool.title} completed cleanly.`;
         }
 
+        return {
+          bytes: outBytes,
+          mime: outMime,
+          ext: outExt,
+          filename: outFilename,
+          summary: resultSummary,
+          richText: richTextPreview,
+          dataUrl: state.lastOutputDataUrl,
+          imageBadge: state.lastOutputImageBadge,
+          subFiles: outSubFiles
+        };
+    }
+
+    async function executeActiveTool() {
+      const tool = TOOLS.find(t => t.id === state.activeToolId) || TOOLS[0];
+      if (state.inspectPromise) {
+        await state.inspectPromise;
+      }
+      if (state.files.length === 0) {
+        if (tool.id === 'html-to-pdf') {
+          await loadSampleFilesForCurrentTool(true);
+        } else {
+          showToast('Please select or drop your file first!', '#E11D48');
+          document.getElementById('fileInput').click();
+          return;
+        }
+      }
+
+      const runBtn = document.getElementById('runToolActionBtn');
+      const runBtnText = document.getElementById('runToolActionBtnText');
+      runBtn.disabled = true;
+      runBtnText.textContent = `Processing ${tool.title}...`;
+      state.lastOutputDataUrl = null;
+      state.lastOutputImageBadge = '';
+
+      const setProgress = (msg) => {
+        if (runBtnText) runBtnText.textContent = msg;
+      };
+
+      try {
+        let outBytes = null;
+        let outMime = 'application/pdf';
+        let outExt = 'pdf';
+        let outFilename = '';
+        let resultSummary = '';
+        let richTextPreview = '';
+
+        const isCombineTool = (tool.id === 'merge-pdf' || tool.id === 'compare-pdf' || tool.id === 'jpg-to-pdf' || tool.id === 'scan-to-pdf');
+        const isBatch = state.files.length > 1 && !isCombineTool;
+
+        if (!isBatch) {
+          // Single file processing OR multi-file combine tool (merge, compare, jpg/scan to pdf)
+          const res = await processToolOnFiles(tool, state.files, setProgress);
+          outBytes = res.bytes;
+          outMime = res.mime;
+          outExt = res.ext;
+          outFilename = res.filename;
+          resultSummary = res.summary;
+          richTextPreview = res.richText;
+          if (res.dataUrl) {
+            state.lastOutputDataUrl = res.dataUrl;
+            state.lastOutputImageBadge = res.imageBadge || '';
+          }
+        } else {
+          // MULTIPLE FILES BATCH CONVERSION -> PACKAGED INTO A ZIP ARCHIVE!
+          if (!window.JSZip) throw new Error('Zip compression engine unavailable');
+          const zip = new window.JSZip();
+          const totalFiles = state.files.length;
+          const manifestRows = [];
+          let totalOutBytes = 0;
+          const usedFilenames = new Set();
+
+          for (let i = 0; i < totalFiles; i++) {
+            const fileItem = state.files[i];
+            setProgress(`Converting ${i + 1}/${totalFiles}: ${fileItem.name}...`);
+
+            const res = await processToolOnFiles(tool, [fileItem], (msg) => {
+              setProgress(`[${i + 1}/${totalFiles}] ${msg}`);
+            });
+
+            if (res.subFiles && res.subFiles.length > 0) {
+              for (const sf of res.subFiles) {
+                let sfName = sf.filename;
+                let counter = 1;
+                const extDot = sf.filename.lastIndexOf('.');
+                const b = extDot > 0 ? sf.filename.slice(0, extDot) : sf.filename;
+                const e = extDot > 0 ? sf.filename.slice(extDot) : '';
+                while (usedFilenames.has(sfName)) {
+                  sfName = `${b}_(${counter})${e}`;
+                  counter++;
+                }
+                usedFilenames.add(sfName);
+                zip.file(sfName, sf.bytes);
+                totalOutBytes += sf.bytes.length;
+              }
+              manifestRows.push({
+                index: i + 1,
+                inputName: fileItem.name,
+                outputName: `${res.subFiles.length} files (${res.filename})`,
+                outSize: res.bytes ? res.bytes.length : 0
+              });
+            } else {
+              let targetName = res.filename;
+              let counter = 1;
+              const extDot = res.filename.lastIndexOf('.');
+              const b = extDot > 0 ? res.filename.slice(0, extDot) : res.filename;
+              const e = extDot > 0 ? res.filename.slice(extDot) : '';
+              while (usedFilenames.has(targetName)) {
+                targetName = `${b}_(${counter})${e}`;
+                counter++;
+              }
+              usedFilenames.add(targetName);
+
+              zip.file(targetName, res.bytes);
+              totalOutBytes += res.bytes.length;
+
+              manifestRows.push({
+                index: i + 1,
+                inputName: fileItem.name,
+                outputName: targetName,
+                outSize: res.bytes.length
+              });
+            }
+
+            if (i === 0 && res.dataUrl) {
+              state.lastOutputDataUrl = res.dataUrl;
+              state.lastOutputImageBadge = `First file: ${res.imageBadge || ''}`;
+            }
+          }
+
+          setProgress('Packaging converted files into ZIP folder...');
+          const zipBytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+          outBytes = zipBytes;
+          outMime = 'application/zip';
+          outExt = 'zip';
+
+          const cleanToolName = tool.title.replace(/[^a-zA-Z0-9]/g, '_');
+          outFilename = `PDFMaxx_${cleanToolName}_${totalFiles}_Files.zip`;
+          resultSummary = `Successfully converted all ${totalFiles} files into ${tool.title} format and packaged them into a single ZIP archive (${formatBytes(zipBytes.length)}).`;
+
+          // Generate detailed manifest report for the result card
+          const reportLines = [
+            `PDFMaxx Batch Conversion Report`,
+            `================================================================================`,
+            `Tool Applied:       ${tool.title}`,
+            `Files Converted:    ${totalFiles}`,
+            `Output ZIP Archive: ${outFilename} (${formatBytes(zipBytes.length)})`,
+            `Total Output Size:  ${formatBytes(totalOutBytes)} (uncompressed sum)`,
+            `--------------------------------------------------------------------------------`,
+            `#  | Input File                      | Converted Output File            | Size`,
+            `--------------------------------------------------------------------------------`
+          ];
+          for (const row of manifestRows) {
+            const inN = (row.inputName.length > 30 ? row.inputName.slice(0, 27) + '...' : row.inputName).padEnd(31);
+            const outN = (row.outputName.length > 32 ? row.outputName.slice(0, 29) + '...' : row.outputName).padEnd(33);
+            reportLines.push(`${String(row.index).padStart(2)} | ${inN} | ${outN} | ${formatBytes(row.outSize).padStart(10)}`);
+          }
+          reportLines.push(`--------------------------------------------------------------------------------`);
+          reportLines.push(`Extract this ZIP folder on your device to access all your converted files.`);
+          richTextPreview = reportLines.join('\n');
+        }
+
         // Create downloadable Blob URL
         if (state.lastOutputBlobUrl) {
           URL.revokeObjectURL(state.lastOutputBlobUrl);
@@ -1271,7 +1429,9 @@ ${pagesHtml.join('\n')}
         // Populate Result Card
         const resCard = document.getElementById('resultDownloadCard');
         resCard.classList.remove('hidden');
-        document.getElementById('resultTitleText').textContent = `${tool.title} Completed!`;
+        document.getElementById('resultTitleText').textContent = isBatch
+          ? `${tool.title} Batch Completed! (${state.files.length} Files)`
+          : `${tool.title} Completed!`;
         document.getElementById('resultMetaText').textContent = `${resultSummary} • Output size: ${formatBytes(outBytes.length)}`;
         document.getElementById('resultFormatBadge').textContent = outExt.toUpperCase();
 
@@ -1300,7 +1460,7 @@ ${pagesHtml.join('\n')}
           richWrap.classList.add('hidden');
         }
 
-        showToast(`${tool.title} finished! Ready to download.`, tool.color);
+        showToast(isBatch ? `${tool.title} batch finished! (${state.files.length} files in ZIP)` : `${tool.title} finished! Ready to download.`, tool.color);
       } catch (err) {
         console.error('Tool processing error:', err);
         showToast('Error: ' + (err.message || 'Check file format'), '#E11D48');

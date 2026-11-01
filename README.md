@@ -65,6 +65,7 @@ The app features a beautiful, modern UI with **dark mode** and **light mode** su
 - 🔍 Instant search to find any tool
 - 📄 Live document preview with page thumbnails
 - ⚡ Drag & drop file upload
+- 📦 **Batch File Conversion & ZIP Download**: Upload multiple files at once to convert them simultaneously, automatically packaged into a ready-to-extract ZIP archive
 - 📱 Fully responsive layout
 
 ---

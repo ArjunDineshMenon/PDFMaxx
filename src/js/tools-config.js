@@ -26,7 +26,7 @@
         color: '#EA580C', // Burnt Orange
         badgeBg: 'rgba(234, 88, 12, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/>'
       },
@@ -38,7 +38,7 @@
         color: '#16A34A', // Emerald Green
         badgeBg: 'rgba(22, 163, 74, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>'
       },
@@ -62,7 +62,7 @@
         color: '#2563EB', // Royal Blue
         badgeBg: 'rgba(37, 99, 235, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'
       },
@@ -74,7 +74,7 @@
         color: '#D97706', // Warm Amber
         badgeBg: 'rgba(217, 119, 6, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>'
       },
@@ -86,7 +86,7 @@
         color: '#059669', // Forest Jade
         badgeBg: 'rgba(5, 150, 105, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>'
       },
@@ -98,7 +98,7 @@
         color: '#1D4ED8', // Cobalt Blue
         badgeBg: 'rgba(29, 78, 216, 0.12)',
         accept: '.doc,.docx,.txt,.rtf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>'
       },
@@ -110,7 +110,7 @@
         color: '#C2410C', // Rust Terracotta
         badgeBg: 'rgba(194, 65, 12, 0.12)',
         accept: '.ppt,.pptx,.txt',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>'
       },
@@ -122,7 +122,7 @@
         color: '#15803D', // Deep Leaf Green
         badgeBg: 'rgba(21, 128, 61, 0.12)',
         accept: '.xls,.xlsx,.csv',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'
       },
@@ -134,7 +134,7 @@
         color: '#7C3AED', // Vivid Violet
         badgeBg: 'rgba(124, 58, 237, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>'
       },
@@ -146,7 +146,7 @@
         color: '#CA8A04', // Goldenrod Yellow
         badgeBg: 'rgba(202, 138, 4, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>'
       },
@@ -170,7 +170,7 @@
         color: '#4F46E5', // Indigo Ink
         badgeBg: 'rgba(79, 70, 229, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"/>'
       },
@@ -182,7 +182,7 @@
         color: '#9333EA', // Amethyst Purple
         badgeBg: 'rgba(147, 51, 234, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>'
       },
@@ -206,7 +206,7 @@
         color: '#0284C7', // Cerulean Sky
         badgeBg: 'rgba(2, 132, 199, 0.12)',
         accept: '.html,.htm,.txt',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>'
       },
@@ -218,7 +218,7 @@
         color: '#0D9488', // Teal Cyan
         badgeBg: 'rgba(13, 148, 136, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>'
       },
@@ -230,7 +230,7 @@
         color: '#0F766E', // Deep Petrol Teal
         badgeBg: 'rgba(15, 118, 110, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>'
       },
@@ -242,7 +242,7 @@
         color: '#F97316', // Tangerine Orange
         badgeBg: 'rgba(249, 115, 22, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>'
       },
@@ -254,7 +254,7 @@
         color: '#0369A1', // Archival Ocean Blue
         badgeBg: 'rgba(3, 105, 161, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>'
       },
@@ -266,7 +266,7 @@
         color: '#65A30D', // Olive Lime
         badgeBg: 'rgba(101, 163, 13, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>'
       },
@@ -278,7 +278,7 @@
         color: '#A855F7', // Orchid Purple
         badgeBg: 'rgba(168, 85, 247, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>'
       },
@@ -302,7 +302,7 @@
         color: '#10B981', // Mint Emerald
         badgeBg: 'rgba(16, 185, 129, 0.12)',
         accept: '.pdf,.jpg,.png',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>'
       },
@@ -326,7 +326,7 @@
         color: '#BE123C', // Dark Ruby Crimson
         badgeBg: 'rgba(190, 18, 60, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>'
       },
@@ -338,7 +338,7 @@
         color: '#EC4899', // Hot Pink Coral
         badgeBg: 'rgba(236, 72, 153, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: true,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 3v12a2 2 0 002 2h12M3 7h12a2 2 0 012 2v12"/>'
       },
@@ -350,7 +350,7 @@
         color: '#14B8A6', // Bright Turquoise
         badgeBg: 'rgba(20, 184, 166, 0.12)',
         accept: '.pdf',
-        multiple: false,
+        multiple: true,
         isNew: true,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>'
       },
@@ -362,7 +362,7 @@
         color: '#D946EF', // Electric Fuchsia
         badgeBg: 'rgba(217, 70, 239, 0.12)',
         accept: '.pdf,.txt,.md',
-        multiple: false,
+        multiple: true,
         isNew: true,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>'
       },
@@ -374,7 +374,7 @@
         color: '#3B82F6', // Azure Sapphire
         badgeBg: 'rgba(59, 130, 246, 0.12)',
         accept: '.pdf,.txt',
-        multiple: false,
+        multiple: true,
         isNew: true,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>'
       },
@@ -386,7 +386,7 @@
         color: '#475569', // Slate Graphite
         badgeBg: 'rgba(71, 85, 105, 0.14)',
         accept: '.pdf,.txt',
-        multiple: false,
+        multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>'
       }

@@ -1969,8 +1969,9 @@
                           (state.lastOutputFilename.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
                           (state.lastOutputFilename.endsWith('.pptx') ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation' :
                           (state.lastOutputFilename.endsWith('.xlsx') ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
+                          (state.lastOutputFilename.endsWith('.zip') ? 'application/zip' :
                           (state.lastOutputFilename.endsWith('.png') ? 'image/png' :
-                          (state.lastOutputFilename.endsWith('.webp') ? 'image/webp' : 'image/jpeg')))));
+                          (state.lastOutputFilename.endsWith('.webp') ? 'image/webp' : 'image/jpeg'))))));
 
               const file = new File([state.lastOutputBytes], state.lastOutputFilename, { type: mime });
               if (navigator.canShare({ files: [file] })) {
