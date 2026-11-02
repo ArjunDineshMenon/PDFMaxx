@@ -88,3 +88,14 @@ header {
 .invert-filter {
   filter: invert(1) hue-rotate(180deg);
 }
+
+#omniViewportStage {
+  background-color: #525659;
+}
+html.dark #omniViewportStage {
+  background-color: #1e1e1e;
+}
+#omniSlideCanvas {
+  transform-origin: top center;
+  box-shadow: 0 12px 48px -8px rgba(0, 0, 0, 0.45);
+}

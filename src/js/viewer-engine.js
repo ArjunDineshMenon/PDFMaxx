@@ -1,7 +1,7 @@
 /**
  * PDFMaxx — Universal File Viewer ("Omni Viewer") Engine
- * Client-side reader for PDF, Word, PowerPoint, Excel, Images, Code, Audio, Video, Archives & Hex inspection.
- * 100% Offline & Private in browser, PWA, Capacitor mobile, and Windows desktop.
+ * Authentic, zero-distortion client-side renderer for PDF, Word, PowerPoint, Excel, Images, Code, Audio, Video & Hex inspection.
+ * Renders documents exactly as they truly look in native office software, 100% offline & private.
  */
 (function(window) {
   'use strict';
@@ -25,13 +25,11 @@
     mdRendered: true,
     hexOffset: 0,
     hexPageSize: 1024,
-    hexTab: 'dump', // 'dump' | 'strings'
     pdfDoc: null,
     pdfRendering: false,
-    extractedStrings: null
+    pptxPackage: null
   };
 
-  // Known file magic signatures
   const MAGIC_SIGNATURES = [
     { magic: [0x25, 0x50, 0x44, 0x46], name: 'PDF Document', ext: 'pdf' },
     { magic: [0x50, 0x4B, 0x03, 0x04], name: 'ZIP / Office OpenXML (DOCX, PPTX, XLSX)', ext: 'zip' },
@@ -60,7 +58,7 @@
     if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'weba'].includes(ext) || mime.startsWith('audio/')) return 'audio';
     if (['mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi'].includes(ext) || mime.startsWith('video/')) return 'video';
     if (['zip', 'epub', 'cbz'].includes(ext) || mime.includes('zip')) return 'zip';
-    if (['txt', 'md', 'markdown', 'json', 'js', 'mjs', 'ts', 'jsx', 'tsx', 'html', 'htm', 'css', 'scss', 'py', 'java', 'c', 'cpp', 'h', 'cs', 'go', 'rs', 'php', 'rb', 'swift', 'kt', 'sql', 'sh', 'bat', 'ps1', 'xml', 'yaml', 'yml', 'ini', 'toml', 'env', 'log', 'config', 'gitignore'].includes(ext) || mime.startsWith('text/')) return 'code';
+    if (['txt', 'md', 'markdown', 'json', 'js', 'mjs', 'ts', 'jsx', 'tsx', 'html', 'htm', 'css', 'scss', 'py', 'java', 'c', 'cpp', 'h', 'cs', 'go', 'rs', 'php', 'rb', 'swift', 'kt', 'sql', 'sh', 'bat', 'ps1', 'xml', 'yaml', 'yml', 'ini', 'toml', 'env', 'log', 'config'].includes(ext) || mime.startsWith('text/')) return 'code';
 
     return 'binary';
   }
@@ -77,7 +75,6 @@
       }
       if (match) return `${entry.name} [Detected by Magic Signature]`;
     }
-    // Check if mostly printable ASCII/UTF-8
     let printable = 0;
     const sampleLen = Math.min(bytes.length, 256);
     for (let i = 0; i < sampleLen; i++) {
@@ -107,41 +104,21 @@
       .replace(/'/g, '&#39;');
   }
 
-  // Simple Markdown parser for client-side rendering without heavy external dependencies
   function parseMarkdownToHtml(md) {
     if (!md) return '';
     let html = escapeHtml(md);
-
-    // Code blocks ```
-    html = html.replace(/```([\s\S]*?)```/g, function(match, code) {
-      return `<pre class="my-3 p-3 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto"><code>${code.trim()}</code></pre>`;
-    });
-
-    // Inline code `code`
+    html = html.replace(/```([\s\S]*?)```/g, (match, code) => `<pre class="my-3 p-3 rounded-lg bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto"><code>${code.trim()}</code></pre>`);
     html = html.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-gray-800 font-mono text-xs text-rose-600 dark:text-rose-400">$1</code>');
-
-    // Headings
-    html = html.replace(/^### (.*$)/gim, '<h3 class="text-base font-bold text-slate-900 dark:text-white mt-4 mb-2">$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2 class="text-lg font-bold text-slate-900 dark:text-white mt-5 mb-2 pb-1 border-b border-slate-200 dark:border-gray-800">$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1 class="text-xl font-extrabold text-slate-900 dark:text-white mt-6 mb-3 pb-2 border-b-2 border-rose-500">$1</h1>');
-
-    // Bold & Italic
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-slate-900 dark:text-white">$1</strong>');
+    html = html.replace(/^### (.*$)/gim, '<h3 class="text-base font-bold mt-4 mb-2">$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="text-lg font-bold mt-5 mb-2 pb-1 border-b border-slate-200 dark:border-gray-800">$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1 class="text-xl font-extrabold mt-6 mb-3 pb-2 border-b-2 border-slate-300 dark:border-gray-700">$1</h1>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold">$1</strong>');
     html = html.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
-
-    // Blockquotes
-    html = html.replace(/^\> (.*$)/gim, '<blockquote class="border-l-4 border-rose-500 pl-3 my-2 text-slate-600 dark:text-slate-300 italic bg-rose-50/50 dark:bg-rose-950/20 py-1 rounded-r">$1</blockquote>');
-
-    // Horizontal Rule
+    html = html.replace(/^\> (.*$)/gim, '<blockquote class="border-l-4 border-slate-400 pl-3 my-2 text-slate-600 dark:text-slate-300 italic">$1</blockquote>');
     html = html.replace(/^---$/gim, '<hr class="my-4 border-slate-200 dark:border-gray-800" />');
-
-    // Lists
-    html = html.replace(/^\s*[\-\*]\s+(.*$)/gim, '<li class="ml-4 list-disc text-slate-700 dark:text-slate-300 my-0.5">$1</li>');
-    html = html.replace(/^\s*\d+\.\s+(.*$)/gim, '<li class="ml-4 list-decimal text-slate-700 dark:text-slate-300 my-0.5">$1</li>');
-
-    // Paragraph line breaks
+    html = html.replace(/^\s*[\-\*]\s+(.*$)/gim, '<li class="ml-4 list-disc my-0.5">$1</li>');
+    html = html.replace(/^\s*\d+\.\s+(.*$)/gim, '<li class="ml-4 list-decimal my-0.5">$1</li>');
     html = html.replace(/\n\n/g, '<div class="my-2.5"></div>');
-
     return html;
   }
 
@@ -154,7 +131,6 @@
     },
 
     bindEvents() {
-      // Close button & Esc key
       const closeBtn = document.getElementById('closeViewerBtn');
       if (closeBtn) closeBtn.addEventListener('click', () => this.close());
 
@@ -184,7 +160,6 @@
         }
       });
 
-      // Mode Switcher buttons
       const modeRender = document.getElementById('omniModeRender');
       const modeText = document.getElementById('omniModeText');
       const modeHex = document.getElementById('omniModeHex');
@@ -195,7 +170,6 @@
       if (modeHex) modeHex.addEventListener('click', () => this.setMode('hex'));
       if (modeMeta) modeMeta.addEventListener('click', () => this.setMode('meta'));
 
-      // Zoom Controls
       const zoomIn = document.getElementById('omniZoomIn');
       const zoomOut = document.getElementById('omniZoomOut');
       const zoomReset = document.getElementById('omniZoomReset');
@@ -206,19 +180,16 @@
       if (zoomReset) zoomReset.addEventListener('click', () => this.setZoom(1.0));
       if (zoomFit) zoomFit.addEventListener('click', () => this.setZoom('fit'));
 
-      // Rotate & Invert
       const rotBtn = document.getElementById('omniRotateBtn');
       const invBtn = document.getElementById('omniInvertBtn');
       if (rotBtn) rotBtn.addEventListener('click', () => this.rotate());
       if (invBtn) invBtn.addEventListener('click', () => this.toggleInvert());
 
-      // Navigation Prev / Next
       const prevBtn = document.getElementById('omniPrevBtn');
       const nextBtn = document.getElementById('omniNextBtn');
       if (prevBtn) prevBtn.addEventListener('click', () => this.prevPageOrSlide());
       if (nextBtn) nextBtn.addEventListener('click', () => this.nextPageOrSlide());
 
-      // Search input
       const searchInp = document.getElementById('omniSearchInput');
       if (searchInp) {
         searchInp.addEventListener('input', (e) => {
@@ -227,7 +198,6 @@
         });
       }
 
-      // Sidebar Toggle
       const sideToggle = document.getElementById('omniSidebarToggle');
       if (sideToggle) {
         sideToggle.addEventListener('click', () => {
@@ -237,14 +207,12 @@
         });
       }
 
-      // Download & Print
       const dlBtn = document.getElementById('omniDownloadBtn');
       if (dlBtn) dlBtn.addEventListener('click', () => this.downloadCurrentFile());
 
       const printBtn = document.getElementById('omniPrintBtn');
       if (printBtn) printBtn.addEventListener('click', () => this.printCurrentDocument());
 
-      // Convert shortcut button in modal footer
       const convertBtn = document.getElementById('omniConvertShortcutBtn');
       if (convertBtn) {
         convertBtn.addEventListener('click', () => {
@@ -263,28 +231,25 @@
       state.mode = options.mode || 'render';
       state.page = options.page || 1;
       state.totalPages = fileObj.pageCount || (fileObj.pagesMeta ? fileObj.pagesMeta.length : 1) || 1;
-      state.slide = 1;
-      state.totalSlides = (fileObj.pagesData && fileObj.pagesData.length) ? fileObj.pagesData.length : state.totalPages;
+      state.slide = options.slide || 1;
       state.activeSheetIndex = 0;
       state.zoom = 1.0;
       state.rotation = 0;
       state.invert = false;
       state.searchQuery = '';
       state.hexOffset = 0;
-      state.hexTab = 'dump';
       state.pdfDoc = null;
-      state.extractedStrings = null;
+      state.pptxPackage = null;
 
       const modal = document.getElementById('universalViewerModal');
       if (!modal) return;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
 
-      // Update Header info
-      document.getElementById('omniFileName').textContent = fileObj.name || 'Untitled Document';
+      document.getElementById('omniFileName').textContent = fileObj.name || 'Document';
       document.getElementById('omniFileSize').textContent = formatBytes(fileObj.size || (fileObj.bytes ? fileObj.bytes.length : 0));
       const badge = document.getElementById('omniFormatBadge');
-      badge.textContent = (fileObj.ext || state.fileType).toUpperCase();
+      if (badge) badge.textContent = (fileObj.ext || state.fileType).toUpperCase();
 
       const searchInp = document.getElementById('omniSearchInput');
       if (searchInp) searchInp.value = '';
@@ -301,6 +266,7 @@
       }
       state.file = null;
       state.pdfDoc = null;
+      state.pptxPackage = null;
     },
 
     setMode(newMode) {
@@ -320,9 +286,9 @@
         const el = document.getElementById(t.id);
         if (!el) return;
         if (t.mode === state.mode) {
-          el.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-gray-800 text-rose-600 dark:text-rose-400 shadow-sm border border-slate-200 dark:border-gray-700 transition-all';
+          el.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-gray-800 text-slate-900 dark:text-white shadow-sm border border-slate-300 dark:border-gray-700 transition-all';
         } else {
-          el.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all';
+          el.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all';
         }
       });
     },
@@ -382,7 +348,6 @@
       const invBtn = document.getElementById('omniInvertBtn');
       if (invBtn) {
         invBtn.classList.toggle('text-rose-500', state.invert);
-        invBtn.classList.toggle('bg-rose-50', state.invert);
       }
     },
 
@@ -391,6 +356,7 @@
         if (state.slide > 1) {
           state.slide--;
           this.renderPptxSlide();
+          this.updatePptxSidebarActive();
         }
       } else if (state.page > 1) {
         state.page--;
@@ -404,6 +370,7 @@
         if (state.slide < state.totalSlides) {
           state.slide++;
           this.renderPptxSlide();
+          this.updatePptxSidebarActive();
         }
       } else if (state.page < state.totalPages) {
         state.page++;
@@ -414,13 +381,8 @@
 
     render() {
       const stage = document.getElementById('omniViewportStage');
-      const sidebar = document.getElementById('omniSidebar');
-      const navControls = document.getElementById('omniNavControls');
       if (!stage) return;
-
-      // Reset transformations
       stage.innerHTML = '';
-      if (navControls) navControls.classList.remove('hidden');
 
       if (state.mode === 'render') {
         this.renderVisual();
@@ -437,19 +399,15 @@
     // VISUAL RENDERERS PER FORMAT
     // =========================================================================
     async renderVisual() {
-      const stage = document.getElementById('omniViewportStage');
-      const sidebar = document.getElementById('omniSidebar');
-      const pageInfo = document.getElementById('omniPageCounter');
-
       switch (state.fileType) {
         case 'pdf':
           await this.setupPdf();
           break;
-        case 'docx':
-          await this.renderDocx();
-          break;
         case 'pptx':
           await this.renderPptx();
+          break;
+        case 'docx':
+          await this.renderDocx();
           break;
         case 'xlsx':
           await this.renderXlsx();
@@ -468,26 +426,526 @@
           this.renderCode();
           break;
         default:
-          // Fallback: Show Hex Dump with Notice
-          this.renderHexFallback();
+          this.renderHex();
           break;
       }
     },
 
-    // 1. PDF Renderer using pdf.js
-    async setupPdf() {
+    // =========================================================================
+    // 1. POWERPOINT (.pptx) — AUTHENTIC OPENXML SLIDE CANVAS ENGINE
+    // Renders every shape, tree node, text run, and image at exact coordinates!
+    // =========================================================================
+    async renderPptx() {
       const stage = document.getElementById('omniViewportStage');
+      const pageInfo = document.getElementById('omniPageCounter');
+      const file = state.file;
+
+      if (!window.JSZip || !file.bytes) {
+        stage.innerHTML = `<div class="p-8 text-center text-slate-400">PowerPoint engine unavailable.</div>`;
+        return;
+      }
+
+      stage.innerHTML = `<div class="p-12 text-center text-slate-400">Rendering PowerPoint slides...</div>`;
+
+      try {
+        const zip = await window.JSZip.loadAsync(file.bytes);
+
+        // Slide dimensions from ppt/presentation.xml (default to 16:9 widescreen: 12192000 x 6858000 EMUs)
+        let slideW = 12192000;
+        let slideH = 6858000;
+        const presFile = zip.file('ppt/presentation.xml');
+        if (presFile) {
+          const presXml = await presFile.async('string');
+          const pDoc = new DOMParser().parseFromString(presXml, 'application/xml');
+          const sldSz = pDoc.getElementsByTagName('p:sldSz')[0] || pDoc.getElementsByTagName('sldSz')[0];
+          if (sldSz) {
+            slideW = parseInt(sldSz.getAttribute('cx') || '12192000', 10);
+            slideH = parseInt(sldSz.getAttribute('cy') || '6858000', 10);
+          }
+        }
+
+        // Pre-extract all media files to Blob URLs
+        const mediaMap = {};
+        for (const k of Object.keys(zip.files)) {
+          if (/^ppt\/media\//i.test(k)) {
+            const bytes = await zip.file(k).async('uint8array');
+            const ext = k.split('.').pop().toLowerCase();
+            const mime = ext === 'png' ? 'image/png' : (ext === 'jpg' || ext === 'jpeg') ? 'image/jpeg' : ext === 'svg' ? 'image/svg+xml' : 'image/png';
+            mediaMap[k] = URL.createObjectURL(new Blob([bytes], { type: mime }));
+          }
+        }
+
+        // Find and sort all slide files
+        const slideFiles = Object.keys(zip.files).filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k));
+        slideFiles.sort((a, b) => {
+          const na = parseInt(a.match(/slide(\d+)\.xml/)[1], 10);
+          const nb = parseInt(b.match(/slide(\d+)\.xml/)[1], 10);
+          return na - nb;
+        });
+
+        if (slideFiles.length === 0) {
+          throw new Error('No slides found in presentation.');
+        }
+
+        state.pptxPackage = {
+          zip,
+          slideFiles,
+          slideW,
+          slideH,
+          mediaMap
+        };
+
+        state.totalSlides = slideFiles.length;
+        if (state.slide > state.totalSlides || state.slide < 1) state.slide = 1;
+
+        await this.renderPptxSlide();
+        this.populatePptxSidebar();
+
+      } catch (err) {
+        stage.innerHTML = `<div class="p-8 text-rose-500 font-semibold">Failed to render PowerPoint: ${escapeHtml(err.message)}</div>`;
+      }
+    },
+
+    async renderPptxSlide() {
+      const stage = document.getElementById('omniViewportStage');
+      const pageInfo = document.getElementById('omniPageCounter');
+      if (!stage || !state.pptxPackage) return;
+
+      const { zip, slideFiles, slideW, slideH, mediaMap } = state.pptxPackage;
+      const slidePath = slideFiles[state.slide - 1];
+      if (!slidePath) return;
+
+      const slideNum = slidePath.match(/slide(\d+)\.xml/)[1];
+      const xmlStr = await zip.file(slidePath).async('string');
+      const xmlDoc = new DOMParser().parseFromString(xmlStr, 'application/xml');
+
+      // Load slide relationships (for images)
+      const relsMap = {};
+      const relsPath = `ppt/slides/_rels/slide${slideNum}.xml.rels`;
+      const relsFile = zip.file(relsPath);
+      if (relsFile) {
+        const relsStr = await relsFile.async('string');
+        const rDoc = new DOMParser().parseFromString(relsStr, 'application/xml');
+        const rels = Array.from(rDoc.getElementsByTagName('Relationship'));
+        for (const r of rels) {
+          const id = r.getAttribute('Id');
+          let target = r.getAttribute('Target') || '';
+          if (target.startsWith('../')) target = 'ppt/' + target.replace(/^\.\.\//, '');
+          relsMap[id] = mediaMap[target] || target;
+        }
+      }
+
+      // Detect background color
+      let bgColor = '#FFFFFF';
+      const bgSrgb = xmlDoc.querySelector('bg > bgPr > solidFill > srgbClr, p\\:bg > p\\:bgPr > a\\:solidFill > a\\:srgbClr, bg > solidFill > srgbClr');
+      if (bgSrgb && bgSrgb.getAttribute('val')) {
+        bgColor = '#' + bgSrgb.getAttribute('val');
+      }
+
+      // Parse Shape Tree (<p:spTree>)
+      const spTree = xmlDoc.getElementsByTagName('p:spTree')[0] || xmlDoc.getElementsByTagName('spTree')[0];
+      const elementsHtml = [];
+
+      if (spTree) {
+        this.parsePptxElements(spTree, elementsHtml, relsMap, slideW, slideH);
+      }
+
+      const aspectRatio = `${slideW} / ${slideH}`;
+
+      stage.innerHTML = `
+        <div class="omni-zoom-target flex flex-col items-center justify-center p-4 sm:p-8 min-h-full">
+          <div id="omniSlideCanvas"
+               class="relative shadow-2xl transition-transform"
+               style="width: 100%; max-width: 1060px; aspect-ratio: ${aspectRatio}; background-color: ${bgColor}; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.35); border: 1px solid rgba(0,0,0,0.12); overflow: hidden; container-type: size;">
+            ${elementsHtml.join('')}
+          </div>
+        </div>
+      `;
+
+      if (pageInfo) pageInfo.textContent = `Slide ${state.slide} of ${state.totalSlides}`;
+    },
+
+    parsePptxElements(containerNode, elementsHtml, relsMap, slideW, slideH) {
+      const children = Array.from(containerNode.childNodes);
+
+      for (const node of children) {
+        const tag = node.nodeName.toLowerCase();
+
+        // 1. Regular Shape or Textbox (<p:sp>)
+        if (tag.endsWith(':sp') || tag === 'sp') {
+          const xfrm = node.getElementsByTagName('a:xfrm')[0] || node.getElementsByTagName('xfrm')[0];
+          if (!xfrm) continue;
+          const off = xfrm.getElementsByTagName('a:off')[0] || xfrm.getElementsByTagName('off')[0];
+          const ext = xfrm.getElementsByTagName('a:ext')[0] || xfrm.getElementsByTagName('ext')[0];
+          if (!off || !ext) continue;
+
+          const x = parseInt(off.getAttribute('x') || '0', 10);
+          const y = parseInt(off.getAttribute('y') || '0', 10);
+          const cx = parseInt(ext.getAttribute('cx') || '0', 10);
+          const cy = parseInt(ext.getAttribute('cy') || '0', 10);
+          const rot = parseInt(xfrm.getAttribute('rot') || '0', 10) / 60000;
+
+          const left = (x / slideW) * 100;
+          const top = (y / slideH) * 100;
+          const width = (cx / slideW) * 100;
+          const height = (cy / slideH) * 100;
+
+          // Shape Fill
+          let bgColor = 'transparent';
+          const solidFill = node.querySelector('spPr > solidFill > srgbClr, p\\:spPr > a\\:solidFill > a\\:srgbClr');
+          if (solidFill && solidFill.getAttribute('val')) {
+            bgColor = '#' + solidFill.getAttribute('val');
+          }
+
+          // Shape Border
+          let border = 'none';
+          const ln = node.querySelector('spPr > ln, p\\:spPr > a\\:ln');
+          if (ln) {
+            const lnSrgb = ln.querySelector('solidFill > srgbClr, a\\:solidFill > a\\:srgbClr');
+            const lnW = parseInt(ln.getAttribute('w') || '12700', 10);
+            const borderPx = Math.max(1, Math.round(lnW / 12700));
+            const borderColor = lnSrgb ? '#' + lnSrgb.getAttribute('val') : '#000000';
+            border = `${borderPx}px solid ${borderColor}`;
+          }
+
+          // Preset Geometry (ellipse for tree nodes, roundRect, etc.)
+          const geom = node.querySelector('prstGeom, a\\:prstGeom');
+          const prst = geom ? geom.getAttribute('prst') : 'rect';
+          let geomStyle = '';
+          if (prst === 'ellipse') {
+            geomStyle = 'border-radius: 50%;';
+          } else if (prst === 'roundRect') {
+            geomStyle = 'border-radius: 8px;';
+          }
+
+          // Text content
+          const txBody = node.getElementsByTagName('p:txBody')[0] || node.getElementsByTagName('txBody')[0];
+          let textHtml = '';
+          let vAlign = 'flex-start';
+
+          if (txBody) {
+            const bodyPr = txBody.getElementsByTagName('a:bodyPr')[0] || txBody.getElementsByTagName('bodyPr')[0];
+            const anchor = bodyPr ? bodyPr.getAttribute('anchor') : 't';
+            vAlign = anchor === 'ctr' ? 'center' : anchor === 'b' ? 'flex-end' : 'flex-start';
+
+            const pNodes = Array.from(txBody.getElementsByTagName('a:p')).concat(Array.from(txBody.getElementsByTagName('p')));
+            const paragraphs = [];
+
+            for (const p of pNodes) {
+              const pPr = p.getElementsByTagName('a:pPr')[0] || p.getElementsByTagName('pPr')[0];
+              const algn = pPr ? (pPr.getAttribute('algn') || 'l') : 'l';
+              const textAlign = algn === 'ctr' ? 'center' : algn === 'r' ? 'right' : algn === 'just' ? 'justify' : 'left';
+
+              // Determine whether to display bullets
+              let hasBullet = false;
+              let bulletChar = '•';
+              if (pPr) {
+                const buNone = pPr.getElementsByTagName('a:buNone')[0] || pPr.getElementsByTagName('buNone')[0];
+                const buChar = pPr.getElementsByTagName('a:buChar')[0] || pPr.getElementsByTagName('buChar')[0];
+                const buAuto = pPr.getElementsByTagName('a:buAutoNum')[0] || pPr.getElementsByTagName('buAutoNum')[0];
+                const lvl = parseInt(pPr.getAttribute('lvl') || '0', 10);
+
+                if (buNone) {
+                  hasBullet = false;
+                } else if (buChar && buChar.getAttribute('char')) {
+                  hasBullet = true;
+                  bulletChar = buChar.getAttribute('char');
+                } else if (buAuto) {
+                  hasBullet = true;
+                  bulletChar = '1.';
+                } else if (lvl > 0) {
+                  hasBullet = true;
+                  bulletChar = '•';
+                }
+              }
+
+              const runsHtml = [];
+              const pChildren = Array.from(p.childNodes);
+
+              for (const child of pChildren) {
+                const cTag = child.nodeName.toLowerCase();
+                if (cTag.endsWith(':r') || cTag === 'r') {
+                  const tNode = child.getElementsByTagName('a:t')[0] || child.getElementsByTagName('t')[0];
+                  const text = tNode ? tNode.textContent : '';
+                  if (!text) continue;
+
+                  const rPr = child.getElementsByTagName('a:rPr')[0] || child.getElementsByTagName('rPr')[0];
+                  const sz = rPr ? parseInt(rPr.getAttribute('sz') || '1800', 10) : 1800;
+                  const bold = rPr ? (rPr.getAttribute('b') === '1' || rPr.getAttribute('b') === 'true') : false;
+                  const italic = rPr ? (rPr.getAttribute('i') === '1' || rPr.getAttribute('i') === 'true') : false;
+                  const underline = rPr ? (rPr.hasAttribute('u') && rPr.getAttribute('u') !== 'none') : false;
+
+                  let color = '#000000';
+                  if (rPr) {
+                    const srgb = rPr.querySelector('solidFill > srgbClr, a\\:solidFill > a\\:srgbClr');
+                    if (srgb && srgb.getAttribute('val')) color = '#' + srgb.getAttribute('val');
+                  }
+
+                  const latin = rPr ? rPr.querySelector('latin, a\\:latin') : null;
+                  const typeface = latin ? (latin.getAttribute('typeface') || 'Calibri, Arial, sans-serif') : 'Calibri, Arial, sans-serif';
+
+                  // Vector font sizing proportional to slide height
+                  const fontHeightPct = ((sz / 100) / (slideH / 12700)) * 100;
+
+                  runsHtml.push(`
+                    <span style="font-size: ${fontHeightPct}cqh; font-weight: ${bold ? '700' : '400'}; font-style: ${italic ? 'italic' : 'normal'}; text-decoration: ${underline ? 'underline' : 'none'}; color: ${color}; font-family: '${typeface}', sans-serif; white-space: pre-wrap;">${escapeHtml(text)}</span>
+                  `);
+                } else if (cTag.endsWith(':br') || cTag === 'br') {
+                  runsHtml.push('<br/>');
+                }
+              }
+
+              if (runsHtml.length > 0) {
+                if (hasBullet) {
+                  paragraphs.push(`
+                    <div style="text-align: ${textAlign}; display: flex; align-items: flex-start; margin-bottom: 0.25em;">
+                      <span style="display: inline-block; width: 1.2em; shrink-0; font-size: inherit;">${bulletChar}</span>
+                      <span style="flex: 1;">${runsHtml.join('')}</span>
+                    </div>
+                  `);
+                } else {
+                  paragraphs.push(`
+                    <div style="text-align: ${textAlign}; margin-bottom: 0.15em;">
+                      ${runsHtml.join('')}
+                    </div>
+                  `);
+                }
+              }
+            }
+
+            textHtml = paragraphs.join('');
+          }
+
+          elementsHtml.push(`
+            <div style="position: absolute;
+                        left: ${left}%;
+                        top: ${top}%;
+                        width: ${width}%;
+                        height: ${height}%;
+                        ${rot ? `transform: rotate(${rot}deg);` : ''}
+                        background-color: ${bgColor};
+                        border: ${border};
+                        ${geomStyle}
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: ${vAlign};
+                        box-sizing: border-box;
+                        padding: 3px 5px;
+                        overflow: hidden;">
+              ${textHtml}
+            </div>
+          `);
+        }
+
+        // 2. Picture / Graphic (<p:pic>)
+        else if (tag.endsWith(':pic') || tag === 'pic') {
+          const xfrm = node.getElementsByTagName('a:xfrm')[0] || node.getElementsByTagName('xfrm')[0];
+          if (!xfrm) continue;
+          const off = xfrm.getElementsByTagName('a:off')[0] || xfrm.getElementsByTagName('off')[0];
+          const ext = xfrm.getElementsByTagName('a:ext')[0] || xfrm.getElementsByTagName('ext')[0];
+          if (!off || !ext) continue;
+
+          const x = parseInt(off.getAttribute('x') || '0', 10);
+          const y = parseInt(off.getAttribute('y') || '0', 10);
+          const cx = parseInt(ext.getAttribute('cx') || '0', 10);
+          const cy = parseInt(ext.getAttribute('cy') || '0', 10);
+
+          const left = (x / slideW) * 100;
+          const top = (y / slideH) * 100;
+          const width = (cx / slideW) * 100;
+          const height = (cy / slideH) * 100;
+
+          const blip = node.getElementsByTagName('a:blip')[0] || node.getElementsByTagName('blip')[0];
+          const rId = blip ? (blip.getAttribute('r:embed') || blip.getAttribute('embed')) : null;
+          const imgUrl = rId ? relsMap[rId] : null;
+
+          if (imgUrl) {
+            elementsHtml.push(`
+              <img src="${imgUrl}" alt="Graphic" style="position: absolute; left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; object-fit: contain; pointer-events: none;" />
+            `);
+          }
+        }
+
+        // 3. Graphic Frame / Table (<p:graphicFrame>)
+        else if (tag.endsWith(':graphicframe') || tag === 'graphicframe') {
+          const xfrm = node.getElementsByTagName('a:xfrm')[0] || node.getElementsByTagName('xfrm')[0];
+          if (!xfrm) continue;
+          const off = xfrm.getElementsByTagName('a:off')[0] || xfrm.getElementsByTagName('off')[0];
+          const ext = xfrm.getElementsByTagName('a:ext')[0] || xfrm.getElementsByTagName('ext')[0];
+          if (!off || !ext) continue;
+
+          const left = (parseInt(off.getAttribute('x') || '0', 10) / slideW) * 100;
+          const top = (parseInt(off.getAttribute('y') || '0', 10) / slideH) * 100;
+          const width = (parseInt(ext.getAttribute('cx') || '0', 10) / slideW) * 100;
+          const height = (parseInt(ext.getAttribute('cy') || '0', 10) / slideH) * 100;
+
+          const tbl = node.getElementsByTagName('a:tbl')[0] || node.getElementsByTagName('tbl')[0];
+          if (tbl) {
+            const rows = Array.from(tbl.getElementsByTagName('a:tr'));
+            let tblHtml = `<table style="width: 100%; height: 100%; border-collapse: collapse; font-size: 2.2cqh;">`;
+            rows.forEach(tr => {
+              tblHtml += `<tr>`;
+              const cells = Array.from(tr.getElementsByTagName('a:tc'));
+              cells.forEach(tc => {
+                const textNodes = Array.from(tc.getElementsByTagName('a:t'));
+                const cellText = textNodes.map(t => t.textContent).join(' ');
+                tblHtml += `<td style="border: 1px solid #cbd5e1; padding: 4px; vertical-align: middle;">${escapeHtml(cellText)}</td>`;
+              });
+              tblHtml += `</tr>`;
+            });
+            tblHtml += `</table>`;
+
+            elementsHtml.push(`
+              <div style="position: absolute; left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; overflow: auto;">
+                ${tblHtml}
+              </div>
+            `);
+          }
+        }
+
+        // 4. Grouped Shapes (<p:grpSp>)
+        else if (tag.endsWith(':grpsp') || tag === 'grpsp') {
+          this.parsePptxElements(node, elementsHtml, relsMap, slideW, slideH);
+        }
+      }
+    },
+
+    populatePptxSidebar() {
       const sidebar = document.getElementById('omniSidebar');
+      if (!sidebar || !state.pptxPackage) return;
+
+      let thumbsHtml = `
+        <div class="p-3 border-b border-slate-200 dark:border-gray-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
+          <span>Slides (${state.totalSlides})</span>
+        </div>
+        <div class="p-2 space-y-1.5 overflow-y-auto max-h-[calc(100vh-160px)] custom-scrollbar">
+      `;
+
+      for (let i = 1; i <= state.totalSlides; i++) {
+        const isCurrent = i === state.slide;
+        thumbsHtml += `
+          <button type="button" data-jump-slide="${i}" class="w-full text-left p-2.5 rounded-lg border transition-all ${isCurrent ? 'bg-slate-100 dark:bg-gray-800 border-slate-400 font-bold text-slate-900 dark:text-white' : 'bg-white dark:bg-gray-900 border-slate-200 dark:border-gray-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'}">
+            <span class="text-[11px] font-mono">Slide ${i}</span>
+          </button>
+        `;
+      }
+      thumbsHtml += `</div>`;
+      sidebar.innerHTML = thumbsHtml;
+
+      sidebar.querySelectorAll('[data-jump-slide]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.slide = parseInt(btn.getAttribute('data-jump-slide'), 10);
+          this.renderPptxSlide();
+          this.updatePptxSidebarActive();
+        });
+      });
+    },
+
+    updatePptxSidebarActive() {
+      const sidebar = document.getElementById('omniSidebar');
+      if (!sidebar) return;
+      sidebar.querySelectorAll('[data-jump-slide]').forEach(btn => {
+        const num = parseInt(btn.getAttribute('data-jump-slide'), 10);
+        const isCurrent = num === state.slide;
+        btn.className = `w-full text-left p-2.5 rounded-lg border transition-all ${isCurrent ? 'bg-slate-100 dark:bg-gray-800 border-slate-400 font-bold text-slate-900 dark:text-white' : 'bg-white dark:bg-gray-900 border-slate-200 dark:border-gray-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'}`;
+      });
+    },
+
+    // =========================================================================
+    // 2. WORD (.docx) — AUTHENTIC DOCUMENT PAGES VIA DOCX-PREVIEW
+    // =========================================================================
+    async renderDocx() {
+      const stage = document.getElementById('omniViewportStage');
+      const pageInfo = document.getElementById('omniPageCounter');
       const file = state.file;
 
       if (!file.bytes) {
-        stage.innerHTML = `<div class="p-8 text-center text-slate-400">PDF bytes unavailable</div>`;
+        stage.innerHTML = `<div class="p-8 text-center text-slate-400">Word document bytes unavailable.</div>`;
+        return;
+      }
+
+      stage.innerHTML = `
+        <div class="omni-zoom-target flex flex-col items-center justify-center p-4 sm:p-8 min-h-full">
+          <div id="docxContainer" class="w-full max-w-4xl bg-white shadow-2xl p-6 sm:p-14 border border-slate-200 text-slate-900">
+            <div class="p-8 text-center text-slate-400">Rendering document pages...</div>
+          </div>
+        </div>
+      `;
+
+      const container = document.getElementById('docxContainer');
+
+      if (window.docx && window.docx.renderAsync) {
+        try {
+          container.innerHTML = '';
+          await window.docx.renderAsync(file.bytes, container, null, {
+            className: 'docx-page',
+            inWrapper: false,
+            breakPages: true
+          });
+          if (pageInfo) pageInfo.textContent = `Word Document • ${file.name}`;
+          return;
+        } catch (docxErr) {
+          console.warn('docx-preview fallback:', docxErr);
+        }
+      }
+
+      // Standard A4/Letter clean paper fallback if docx-preview not loaded
+      try {
+        const zip = await window.JSZip.loadAsync(file.bytes);
+        const docXmlFile = zip.file('word/document.xml');
+        if (!docXmlFile) throw new Error('Missing word/document.xml');
+
+        const xmlStr = await docXmlFile.async('string');
+        const xmlDoc = new DOMParser().parseFromString(xmlStr, 'application/xml');
+        const bodyNodes = Array.from(xmlDoc.getElementsByTagName('w:body')[0]?.childNodes || []);
+
+        let html = '';
+        for (const node of bodyNodes) {
+          if (node.nodeName === 'w:p') {
+            const pStyle = node.getElementsByTagName('w:pStyle')[0]?.getAttribute('w:val') || '';
+            const isHeading = /Heading/i.test(pStyle);
+            const rNodes = Array.from(node.getElementsByTagName('w:r'));
+            let pText = '';
+            for (const r of rNodes) {
+              const bold = r.getElementsByTagName('w:b').length > 0;
+              const italic = r.getElementsByTagName('w:i').length > 0;
+              const str = Array.from(r.getElementsByTagName('w:t')).map(t => t.textContent).join('');
+              let s = escapeHtml(str);
+              if (bold) s = `<strong>${s}</strong>`;
+              if (italic) s = `<em>${s}</em>`;
+              pText += s;
+            }
+            if (!pText.trim()) continue;
+            if (isHeading) {
+              html += `<h2 class="text-xl font-bold mt-6 mb-3 text-slate-900">${pText}</h2>`;
+            } else {
+              html += `<p class="my-2 text-base leading-relaxed text-slate-800">${pText}</p>`;
+            }
+          }
+        }
+
+        container.innerHTML = html || '<p class="text-slate-400 italic">Empty Word Document</p>';
+        if (pageInfo) pageInfo.textContent = `Word Document • ${file.name}`;
+      } catch (err) {
+        stage.innerHTML = `<div class="p-8 text-rose-500 font-semibold">Failed to load Word document: ${escapeHtml(err.message)}</div>`;
+      }
+    },
+
+    // =========================================================================
+    // 3. PDF (.pdf) — CRISP VECTOR CANVAS VIA PDF.JS
+    // =========================================================================
+    async setupPdf() {
+      const stage = document.getElementById('omniViewportStage');
+      const file = state.file;
+
+      if (!file.bytes) {
+        stage.innerHTML = `<div class="p-8 text-center text-slate-400">PDF bytes unavailable.</div>`;
         return;
       }
 
       stage.innerHTML = `
         <div class="omni-zoom-target flex flex-col items-center justify-center min-h-full py-4 transition-transform duration-150">
-          <canvas id="omniPdfCanvas" class="shadow-2xl rounded-xl border border-slate-200 dark:border-gray-800 bg-white max-w-full"></canvas>
+          <canvas id="omniPdfCanvas" class="shadow-2xl border border-slate-300 dark:border-gray-800 bg-white max-w-full" style="box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3);"></canvas>
         </div>
       `;
 
@@ -503,8 +961,6 @@
         } catch (err) {
           stage.innerHTML = `<div class="p-8 text-rose-500 font-semibold">Error rendering PDF: ${escapeHtml(err.message)}</div>`;
         }
-      } else {
-        stage.innerHTML = `<div class="p-8 text-center text-amber-500">PDF.js engine loading...</div>`;
       }
     },
 
@@ -533,9 +989,7 @@
         const renderContext = { canvasContext: ctx, viewport: viewport };
         await page.render(renderContext).promise;
 
-        if (pageInfo) {
-          pageInfo.textContent = `Page ${state.page} of ${state.totalPages}`;
-        }
+        if (pageInfo) pageInfo.textContent = `Page ${state.page} of ${state.totalPages}`;
       } catch (e) {
         console.error('PDF render error:', e);
       } finally {
@@ -550,19 +1004,15 @@
       let thumbsHtml = `
         <div class="p-3 border-b border-slate-200 dark:border-gray-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
           <span>Pages (${state.totalPages})</span>
-          <span class="text-[10px] text-slate-400 font-normal">Click to jump</span>
         </div>
-        <div class="p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-180px)] custom-scrollbar">
+        <div class="p-2 space-y-1.5 overflow-y-auto max-h-[calc(100vh-160px)] custom-scrollbar">
       `;
 
       for (let i = 1; i <= state.totalPages; i++) {
         const isCurrent = i === state.page;
         thumbsHtml += `
-          <button type="button" data-jump-page="${i}" class="w-full text-left p-2 rounded-xl border transition-all flex items-center gap-2.5 ${isCurrent ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 font-bold text-rose-600 dark:text-rose-400' : 'bg-white dark:bg-gray-900 border-slate-200 dark:border-gray-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50'}">
-            <span class="w-5 h-5 rounded-md bg-slate-100 dark:bg-gray-800 text-[10px] flex items-center justify-center shrink-0 font-mono">${i}</span>
-            <div class="truncate text-xs">
-              <span>Page ${i}</span>
-            </div>
+          <button type="button" data-jump-page="${i}" class="w-full text-left p-2.5 rounded-lg border transition-all ${isCurrent ? 'bg-slate-100 dark:bg-gray-800 border-slate-400 font-bold text-slate-900 dark:text-white' : 'bg-white dark:bg-gray-900 border-slate-200 dark:border-gray-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50'}">
+            <span class="text-[11px] font-mono">Page ${i}</span>
           </button>
         `;
       }
@@ -578,307 +1028,11 @@
       });
     },
 
-    // 2. Word DOCX Renderer (Native XML Parser)
-    async renderDocx() {
-      const stage = document.getElementById('omniViewportStage');
-      const sidebar = document.getElementById('omniSidebar');
-      const pageInfo = document.getElementById('omniPageCounter');
-      const file = state.file;
-
-      if (!window.JSZip || !file.bytes) {
-        stage.innerHTML = `<div class="p-8 text-center text-slate-400">DOCX decompression engine unavailable.</div>`;
-        return;
-      }
-
-      stage.innerHTML = `<div class="p-8 text-center text-slate-400">Unpacking Word document structure...</div>`;
-
-      try {
-        const zip = await window.JSZip.loadAsync(file.bytes);
-        const docXmlFile = zip.file('word/document.xml');
-        if (!docXmlFile) {
-          throw new Error('Invalid DOCX: word/document.xml missing');
-        }
-
-        // Extract embedded media
-        const mediaMap = {};
-        const mediaKeys = Object.keys(zip.files).filter(k => /^word\/media\//i.test(k));
-        for (const mk of mediaKeys) {
-          const imgBytes = await zip.file(mk).async('uint8array');
-          const ext = mk.split('.').pop().toLowerCase();
-          const mime = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
-          const blob = new Blob([imgBytes], { type: mime });
-          mediaMap[mk] = URL.createObjectURL(blob);
-        }
-
-        const xmlStr = await docXmlFile.async('string');
-        const xmlDoc = new DOMParser().parseFromString(xmlStr, 'application/xml');
-        const bodyNodes = Array.from(xmlDoc.getElementsByTagName('w:body')[0]?.childNodes || []);
-
-        const outlineHeadings = [];
-        let htmlContent = '';
-
-        for (const node of bodyNodes) {
-          if (node.nodeName === 'w:p') {
-            const pStyle = node.getElementsByTagName('w:pStyle')[0]?.getAttribute('w:val') || '';
-            const isHeading1 = /Heading1|Title/i.test(pStyle);
-            const isHeading2 = /Heading2/i.test(pStyle);
-            const isHeading3 = /Heading3/i.test(pStyle);
-
-            const rNodes = Array.from(node.getElementsByTagName('w:r'));
-            let pText = '';
-            for (const r of rNodes) {
-              const isBold = r.getElementsByTagName('w:b').length > 0;
-              const isItalic = r.getElementsByTagName('w:i').length > 0;
-              const isUnderline = r.getElementsByTagName('w:u').length > 0;
-              const tStr = Array.from(r.getElementsByTagName('w:t')).map(t => t.textContent).join('');
-
-              let styledSpan = escapeHtml(tStr);
-              if (isBold) styledSpan = `<strong>${styledSpan}</strong>`;
-              if (isItalic) styledSpan = `<em>${styledSpan}</em>`;
-              if (isUnderline) styledSpan = `<u>${styledSpan}</u>`;
-              pText += styledSpan;
-            }
-
-            if (!pText.trim()) continue;
-
-            if (isHeading1) {
-              const hId = 'docx_h_' + outlineHeadings.length;
-              outlineHeadings.push({ id: hId, text: pText.replace(/<[^>]+>/g, ''), level: 1 });
-              htmlContent += `<h1 id="${hId}" class="text-2xl font-black text-slate-900 dark:text-white mt-8 mb-4 pb-2 border-b-2 border-rose-500">${pText}</h1>`;
-            } else if (isHeading2) {
-              const hId = 'docx_h_' + outlineHeadings.length;
-              outlineHeadings.push({ id: hId, text: pText.replace(/<[^>]+>/g, ''), level: 2 });
-              htmlContent += `<h2 id="${hId}" class="text-xl font-bold text-slate-900 dark:text-white mt-6 mb-3 pb-1 border-b border-slate-200 dark:border-gray-800">${pText}</h2>`;
-            } else if (isHeading3) {
-              const hId = 'docx_h_' + outlineHeadings.length;
-              outlineHeadings.push({ id: hId, text: pText.replace(/<[^>]+>/g, ''), level: 3 });
-              htmlContent += `<h3 id="${hId}" class="text-base font-bold text-slate-800 dark:text-slate-100 mt-4 mb-2">${pText}</h3>`;
-            } else {
-              htmlContent += `<p class="my-2.5 text-sm sm:text-base leading-relaxed text-slate-700 dark:text-slate-300">${pText}</p>`;
-            }
-          } else if (node.nodeName === 'w:tbl') {
-            // Render Table
-            const rows = Array.from(node.getElementsByTagName('w:tr'));
-            let tblHtml = `<div class="my-6 overflow-x-auto rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm"><table class="w-full text-xs text-left">`;
-            rows.forEach((tr, rIdx) => {
-              const cells = Array.from(tr.getElementsByTagName('w:tc'));
-              tblHtml += `<tr class="${rIdx === 0 ? 'bg-slate-100 dark:bg-gray-800 font-bold border-b border-slate-200 dark:border-gray-700' : 'border-b border-slate-100 dark:border-gray-800/60 hover:bg-slate-50/50'}">`;
-              cells.forEach(tc => {
-                const cellText = Array.from(tc.getElementsByTagName('w:t')).map(t => t.textContent).join(' ');
-                tblHtml += `<td class="p-3 border-r border-slate-100 dark:border-gray-800/40 last:border-r-0">${escapeHtml(cellText)}</td>`;
-              });
-              tblHtml += `</tr>`;
-            });
-            tblHtml += `</table></div>`;
-            htmlContent += tblHtml;
-          }
-        }
-
-        // Render images if present
-        if (mediaKeys.length > 0) {
-          let mediaGallery = `<div class="mt-8 pt-6 border-t border-slate-200 dark:border-gray-800"><h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Embedded Document Media (${mediaKeys.length})</h4><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">`;
-          for (const mk of mediaKeys) {
-            mediaGallery += `
-              <div class="rounded-xl border border-slate-200 dark:border-gray-800 p-2 bg-slate-50 dark:bg-gray-800/40 text-center">
-                <img src="${mediaMap[mk]}" alt="Media" class="max-h-36 mx-auto object-contain rounded-lg mb-1.5" />
-                <span class="text-[10px] font-mono text-slate-400 truncate block">${mk.split('/').pop()}</span>
-              </div>
-            `;
-          }
-          mediaGallery += `</div></div>`;
-          htmlContent += mediaGallery;
-        }
-
-        stage.innerHTML = `
-          <div class="omni-zoom-target w-full flex justify-center py-6 px-4">
-            <div class="w-full max-w-4xl bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-slate-200 dark:border-gray-800 p-8 sm:p-14 text-slate-800 dark:text-slate-100">
-              <div class="flex items-center justify-between pb-6 mb-6 border-b border-slate-200 dark:border-gray-800 text-xs text-slate-400">
-                <span class="font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">Microsoft Word Document</span>
-                <span>${file.name}</span>
-              </div>
-              <article class="prose dark:prose-invert max-w-none">
-                ${htmlContent || '<p class="text-slate-400 italic">Document contains no readable text body.</p>'}
-              </article>
-            </div>
-          </div>
-        `;
-
-        if (pageInfo) pageInfo.textContent = `Word Document (${outlineHeadings.length} sections)`;
-
-        // Populate Outline Sidebar
-        if (sidebar) {
-          let sideHtml = `
-            <div class="p-3 border-b border-slate-200 dark:border-gray-800 text-xs font-bold text-slate-700 dark:text-slate-200">
-              Document Outline (${outlineHeadings.length})
-            </div>
-            <div class="p-2 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)] custom-scrollbar">
-          `;
-          if (outlineHeadings.length === 0) {
-            sideHtml += `<p class="p-3 text-xs text-slate-400 italic">No headings found in document.</p>`;
-          } else {
-            outlineHeadings.forEach(h => {
-              sideHtml += `
-                <a href="#${h.id}" class="block p-2 rounded-lg text-xs truncate hover:bg-slate-100 dark:hover:bg-gray-800 text-slate-700 dark:text-slate-300 font-medium ${h.level === 1 ? 'font-bold pl-2' : h.level === 2 ? 'pl-4' : 'pl-6 text-[11px]'}">
-                  ${escapeHtml(h.text)}
-                </a>
-              `;
-            });
-          }
-          sideHtml += `</div>`;
-          sidebar.innerHTML = sideHtml;
-        }
-
-      } catch (err) {
-        stage.innerHTML = `<div class="p-8 text-rose-500 font-semibold">Failed to parse Word document: ${escapeHtml(err.message)}</div>`;
-      }
-    },
-
-    // 3. PowerPoint PPTX Renderer (Slide Deck View)
-    async renderPptx() {
-      const stage = document.getElementById('omniViewportStage');
-      const sidebar = document.getElementById('omniSidebar');
-      const pageInfo = document.getElementById('omniPageCounter');
-      const file = state.file;
-
-      if (!window.JSZip || !file.bytes) {
-        stage.innerHTML = `<div class="p-8 text-center text-slate-400">PowerPoint engine unavailable.</div>`;
-        return;
-      }
-
-      stage.innerHTML = `<div class="p-8 text-center text-slate-400">Loading PowerPoint slides...</div>`;
-
-      try {
-        const zip = await window.JSZip.loadAsync(file.bytes);
-        const slideFiles = Object.keys(zip.files).filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k));
-        slideFiles.sort((a, b) => {
-          const na = parseInt(a.match(/slide(\d+)\.xml/)[1], 10);
-          const nb = parseInt(b.match(/slide(\d+)\.xml/)[1], 10);
-          return na - nb;
-        });
-
-        if (slideFiles.length === 0) {
-          throw new Error('No slides found in presentation archive.');
-        }
-
-        const slidesData = [];
-        for (let i = 0; i < slideFiles.length; i++) {
-          const xmlStr = await zip.file(slideFiles[i]).async('string');
-          const xmlDoc = new DOMParser().parseFromString(xmlStr, 'application/xml');
-          const pNodes = Array.from(xmlDoc.getElementsByTagName('a:p'));
-          const lines = [];
-
-          pNodes.forEach(p => {
-            const texts = Array.from(p.getElementsByTagName('a:t')).map(t => t.textContent).join('');
-            if (texts.trim()) lines.push(texts.trim());
-          });
-
-          slidesData.push({
-            slideNumber: i + 1,
-            title: lines[0] || `Slide ${i + 1}`,
-            points: lines.slice(1)
-          });
-        }
-
-        state.slidesData = slidesData;
-        state.totalSlides = slidesData.length;
-        if (state.slide > state.totalSlides) state.slide = 1;
-
-        this.renderPptxSlide();
-        this.populatePptxSidebar();
-
-      } catch (err) {
-        stage.innerHTML = `<div class="p-8 text-rose-500 font-semibold">Failed to parse PowerPoint presentation: ${escapeHtml(err.message)}</div>`;
-      }
-    },
-
-    renderPptxSlide() {
-      const stage = document.getElementById('omniViewportStage');
-      const pageInfo = document.getElementById('omniPageCounter');
-      if (!stage || !state.slidesData) return;
-
-      const current = state.slidesData[state.slide - 1];
-      if (!current) return;
-
-      stage.innerHTML = `
-        <div class="omni-zoom-target w-full flex justify-center py-6 px-4">
-          <div class="w-full max-w-4xl aspect-[16/9] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border-2 border-slate-200 dark:border-gray-800 p-8 sm:p-14 flex flex-col justify-between text-slate-800 dark:text-slate-100 relative overflow-hidden">
-            <!-- Accent Top Line -->
-            <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-500 via-rose-500 to-amber-500"></div>
-
-            <div>
-              <div class="flex items-center justify-between text-xs text-slate-400 font-mono mb-4">
-                <span class="px-2.5 py-1 rounded-md bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 font-bold uppercase tracking-wider">Slide ${current.slideNumber} of ${state.totalSlides}</span>
-                <span>PowerPoint Presentation</span>
-              </div>
-              <h1 class="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-8">${escapeHtml(current.title)}</h1>
-
-              <div class="space-y-4">
-                ${current.points.length > 0 ? current.points.map(pt => `
-                  <div class="flex items-start gap-3">
-                    <span class="w-2.5 h-2.5 rounded-full bg-orange-500 mt-2 shrink-0"></span>
-                    <p class="text-base sm:text-xl text-slate-700 dark:text-slate-200 leading-snug">${escapeHtml(pt)}</p>
-                  </div>
-                `).join('') : '<p class="text-slate-400 italic">Slide contains graphic elements or empty slide canvas.</p>'}
-              </div>
-            </div>
-
-            <!-- Slide Footer -->
-            <div class="pt-4 border-t border-slate-100 dark:border-gray-800 flex items-center justify-between text-xs text-slate-400">
-              <span class="font-semibold truncate max-w-xs">${state.file.name}</span>
-              <div class="flex items-center gap-2">
-                <button type="button" id="omniSlidePrevBtn" class="px-3 py-1 rounded-lg bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 font-bold">◀ Prev</button>
-                <button type="button" id="omniSlideNextBtn" class="px-3 py-1 rounded-lg bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 font-bold">Next ▶</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      if (pageInfo) pageInfo.textContent = `Slide ${state.slide} of ${state.totalSlides}`;
-
-      document.getElementById('omniSlidePrevBtn')?.addEventListener('click', () => this.prevPageOrSlide());
-      document.getElementById('omniSlideNextBtn')?.addEventListener('click', () => this.nextPageOrSlide());
-    },
-
-    populatePptxSidebar() {
-      const sidebar = document.getElementById('omniSidebar');
-      if (!sidebar || !state.slidesData) return;
-
-      let thumbsHtml = `
-        <div class="p-3 border-b border-slate-200 dark:border-gray-800 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
-          <span>Slide Deck (${state.totalSlides})</span>
-          <span class="text-[10px] text-slate-400 font-normal">Click to jump</span>
-        </div>
-        <div class="p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-180px)] custom-scrollbar">
-      `;
-
-      state.slidesData.forEach((s, idx) => {
-        const isCurrent = s.slideNumber === state.slide;
-        thumbsHtml += `
-          <button type="button" data-jump-slide="${s.slideNumber}" class="w-full text-left p-2.5 rounded-xl border transition-all ${isCurrent ? 'bg-orange-50 dark:bg-orange-950/40 border-orange-500 font-bold text-orange-600 dark:text-orange-400' : 'bg-white dark:bg-gray-900 border-slate-200 dark:border-gray-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50'}">
-            <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-1">
-              <span>SLIDE ${s.slideNumber}</span>
-            </div>
-            <p class="text-xs truncate font-semibold">${escapeHtml(s.title)}</p>
-          </button>
-        `;
-      });
-      thumbsHtml += `</div>`;
-      sidebar.innerHTML = thumbsHtml;
-
-      sidebar.querySelectorAll('[data-jump-slide]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          state.slide = parseInt(btn.getAttribute('data-jump-slide'), 10);
-          this.renderPptxSlide();
-          this.populatePptxSidebar();
-        });
-      });
-    },
-
-    // 4. Excel & Spreadsheet Renderer
+    // =========================================================================
+    // 4. EXCEL (.xlsx, .csv) — AUTHENTIC EXCEL GRID & BOTTOM TABS
+    // =========================================================================
     async renderXlsx() {
       const stage = document.getElementById('omniViewportStage');
-      const sidebar = document.getElementById('omniSidebar');
       const pageInfo = document.getElementById('omniPageCounter');
       const file = state.file;
 
@@ -890,66 +1044,63 @@
       try {
         const wb = window.XLSX.read(file.bytes, { type: 'array' });
         const sheetNames = wb.SheetNames;
-        if (sheetNames.length === 0) throw new Error('No worksheets found.');
+        if (sheetNames.length === 0) throw new Error('No sheets found.');
 
         state.sheets = sheetNames;
         const currentSheetName = sheetNames[state.activeSheetIndex] || sheetNames[0];
         const sheet = wb.Sheets[currentSheetName];
         const rows = window.XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        // Filter rows if search query is active
-        const displayRows = state.searchQuery
-          ? rows.filter(r => r.some(c => String(c).toLowerCase().includes(state.searchQuery)))
-          : rows;
+        const colLetter = (idx) => {
+          let s = '';
+          idx++;
+          while (idx > 0) {
+            let rem = (idx - 1) % 26;
+            s = String.fromCharCode(65 + rem) + s;
+            idx = Math.floor((idx - 1) / 26);
+          }
+          return s;
+        };
 
-        let tableHtml = `
-          <div class="w-full max-w-7xl mx-auto p-4 space-y-4">
-            <!-- Sheet Tabs Header -->
-            <div class="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-sm">
-              <div class="flex flex-wrap items-center gap-1.5">
-                ${sheetNames.map((sn, sIdx) => `
-                  <button type="button" data-switch-sheet="${sIdx}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${sIdx === state.activeSheetIndex ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}">
-                    ${escapeHtml(sn)}
-                  </button>
-                `).join('')}
-              </div>
-              <div class="text-xs font-mono text-slate-500">
-                <span>${rows.length} rows</span> • <span>${(rows[0] || []).length} cols</span>
-              </div>
-            </div>
+        const maxCols = rows.reduce((max, r) => Math.max(max, r ? r.length : 0), 0) || 10;
+        const cols = Array.from({ length: maxCols }, (_, i) => colLetter(i));
 
-            <!-- Spreadsheet Grid -->
-            <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl max-h-[70vh] custom-scrollbar">
-              <table class="w-full text-xs text-left border-collapse">
-                <thead class="sticky top-0 z-10 bg-slate-100 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-700 dark:text-slate-200 font-mono">
+        stage.innerHTML = `
+          <div class="w-full h-full flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+            <div class="flex-1 overflow-auto custom-scrollbar">
+              <table class="w-full text-xs text-left border-collapse font-sans">
+                <thead class="sticky top-0 z-10 bg-[#f3f4f6] dark:bg-gray-800 border-b border-[#d1d5db] dark:border-gray-700 text-slate-600 dark:text-slate-300 font-mono text-[11px]">
                   <tr>
-                    <th class="p-2.5 w-12 text-center bg-slate-200/80 dark:bg-gray-700/80 border-r border-slate-200 dark:border-gray-700">#</th>
-                    ${(rows[0] || []).map((_, colIdx) => `
-                      <th class="p-2.5 px-3 border-r border-slate-200 dark:border-gray-700 whitespace-nowrap">
-                        ${String.fromCharCode(65 + (colIdx % 26))}${colIdx >= 26 ? Math.floor(colIdx / 26) : ''}
-                      </th>
+                    <th class="p-2 w-12 text-center bg-[#e5e7eb] dark:bg-gray-700 border-r border-[#d1d5db] dark:border-gray-700"></th>
+                    ${cols.map(c => `
+                      <th class="p-2 px-3 border-r border-[#d1d5db] dark:border-gray-700 text-center font-semibold select-none">${c}</th>
                     `).join('')}
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-gray-800/60 font-mono">
-                  ${displayRows.slice(0, 300).map((r, rIdx) => `
-                    <tr class="hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-colors">
-                      <td class="p-2 text-center text-slate-400 bg-slate-50 dark:bg-gray-800/40 border-r border-slate-200 dark:border-gray-800 text-[11px]">${rIdx + 1}</td>
-                      ${(rows[0] || []).map((_, cIdx) => {
-                        const cellVal = r[cIdx] !== undefined ? String(r[cIdx]) : '';
-                        const isMatch = state.searchQuery && cellVal.toLowerCase().includes(state.searchQuery);
-                        return `<td class="p-2 px-3 border-r border-slate-100 dark:border-gray-800/60 whitespace-nowrap max-w-xs truncate ${isMatch ? 'bg-amber-200 text-amber-900 font-bold' : ''}">${escapeHtml(cellVal)}</td>`;
+                <tbody class="divide-y divide-[#e5e7eb] dark:divide-gray-800 font-sans">
+                  ${rows.slice(0, 500).map((r, rIdx) => `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-gray-800/50">
+                      <td class="p-1.5 text-center text-slate-500 bg-[#f3f4f6] dark:bg-gray-800/80 border-r border-[#d1d5db] dark:border-gray-700 font-mono text-[11px] select-none">${rIdx + 1}</td>
+                      ${cols.map((_, cIdx) => {
+                        const cellVal = (r && r[cIdx] !== undefined) ? String(r[cIdx]) : '';
+                        return `<td class="p-1.5 px-2.5 border-r border-[#e5e7eb] dark:border-gray-800 whitespace-nowrap max-w-sm truncate text-slate-800 dark:text-slate-100">${escapeHtml(cellVal)}</td>`;
                       }).join('')}
                     </tr>
                   `).join('')}
                 </tbody>
               </table>
-              ${displayRows.length > 300 ? `<div class="p-3 text-center text-xs text-slate-400 bg-slate-50 dark:bg-gray-800/50">Displaying first 300 rows of ${displayRows.length} total rows.</div>` : ''}
+            </div>
+
+            <div class="h-9 px-3 bg-[#f3f4f6] dark:bg-gray-800 border-t border-[#d1d5db] dark:border-gray-700 flex items-center gap-1 overflow-x-auto shrink-0 select-none">
+              ${sheetNames.map((sn, sIdx) => `
+                <button type="button" data-switch-sheet="${sIdx}" class="px-3 py-1 text-xs font-semibold rounded-t border-b-2 transition-all ${sIdx === state.activeSheetIndex ? 'bg-white dark:bg-gray-900 text-emerald-700 dark:text-emerald-400 border-emerald-600 font-bold shadow-sm' : 'text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-200 dark:hover:bg-gray-700'}">
+                  ${escapeHtml(sn)}
+                </button>
+              `).join('')}
             </div>
           </div>
         `;
 
-        stage.innerHTML = tableHtml;
         if (pageInfo) pageInfo.textContent = `Sheet: ${currentSheetName} (${rows.length} rows)`;
 
         stage.querySelectorAll('[data-switch-sheet]').forEach(btn => {
@@ -964,7 +1115,9 @@
       }
     },
 
-    // 5. Image Viewer (High-Res Pan/Zoom + Rotation)
+    // =========================================================================
+    // 5. IMAGES — CLEAN NATIVE PHOTO VIEWER
+    // =========================================================================
     renderImage() {
       const stage = document.getElementById('omniViewportStage');
       const pageInfo = document.getElementById('omniPageCounter');
@@ -974,16 +1127,16 @@
 
       stage.innerHTML = `
         <div class="omni-zoom-target flex flex-col items-center justify-center min-h-full p-4 transition-transform duration-150">
-          <div class="p-3 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-gray-800 inline-block max-w-full">
-            <img src="${imgUrl}" alt="${file.name}" class="max-h-[75vh] max-w-full object-contain rounded-xl select-none" />
-          </div>
+          <img src="${imgUrl}" alt="${file.name}" class="max-h-[82vh] max-w-full object-contain shadow-2xl select-none" />
         </div>
       `;
 
       if (pageInfo) pageInfo.textContent = `Image • ${file.name}`;
     },
 
-    // 6. Media (Audio / Video) Player
+    // =========================================================================
+    // 6. AUDIO & VIDEO
+    // =========================================================================
     renderMedia() {
       const stage = document.getElementById('omniViewportStage');
       const pageInfo = document.getElementById('omniPageCounter');
@@ -994,50 +1147,31 @@
 
       stage.innerHTML = `
         <div class="w-full max-w-3xl mx-auto p-6 flex flex-col items-center justify-center min-h-[60vh]">
-          <div class="w-full bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-800 p-6 flex flex-col items-center space-y-6">
-            <div class="flex items-center gap-3 self-start">
-              <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
-              <span class="text-xs font-mono font-bold text-slate-300 uppercase">${isVideo ? 'Video Player' : 'Audio Player'}</span>
+          ${isVideo ? `
+            <video controls autoplay class="w-full rounded-xl max-h-[70vh] bg-black shadow-2xl">
+              <source src="${mediaUrl}" type="${file.type || 'video/mp4'}" />
+            </video>
+          ` : `
+            <div class="w-full p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-slate-200 dark:border-gray-800 flex flex-col items-center space-y-4">
+              <div class="text-base font-bold text-slate-800 dark:text-slate-100">${file.name}</div>
+              <audio controls class="w-full max-w-md">
+                <source src="${mediaUrl}" type="${file.type || 'audio/mpeg'}" />
+              </audio>
             </div>
-
-            ${isVideo ? `
-              <video controls autoplay class="w-full rounded-2xl max-h-[60vh] bg-black shadow">
-                <source src="${mediaUrl}" type="${file.type || 'video/mp4'}" />
-                Your browser does not support HTML5 video.
-              </video>
-            ` : `
-              <div class="w-full py-12 flex flex-col items-center justify-center space-y-6">
-                <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white shadow-xl">
-                  <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
-                </div>
-                <audio controls class="w-full max-w-md">
-                  <source src="${mediaUrl}" type="${file.type || 'audio/mpeg'}" />
-                  Your browser does not support HTML5 audio.
-                </audio>
-              </div>
-            `}
-
-            <div class="w-full flex items-center justify-between text-xs text-slate-400 font-mono pt-4 border-t border-slate-800">
-              <span class="truncate max-w-sm">${file.name}</span>
-              <span>${formatBytes(file.size || file.bytes.length)}</span>
-            </div>
-          </div>
+          `}
         </div>
       `;
 
-      if (pageInfo) pageInfo.textContent = `${isVideo ? 'Video' : 'Audio'} Playback`;
+      if (pageInfo) pageInfo.textContent = `${isVideo ? 'Video' : 'Audio'}`;
     },
 
-    // 7. Archive (ZIP) File Explorer
+    // =========================================================================
+    // 7. ARCHIVES (.zip)
+    // =========================================================================
     async renderZip() {
       const stage = document.getElementById('omniViewportStage');
       const pageInfo = document.getElementById('omniPageCounter');
       const file = state.file;
-
-      if (!window.JSZip || !file.bytes) {
-        stage.innerHTML = `<div class="p-8 text-center text-slate-400">ZIP reader unavailable.</div>`;
-        return;
-      }
 
       try {
         const zip = await window.JSZip.loadAsync(file.bytes);
@@ -1049,27 +1183,18 @@
             size: entry._data ? entry._data.uncompressedSize || 0 : 0
           };
         });
-
         entries.sort((a, b) => (b.dir - a.dir) || a.name.localeCompare(b.name));
 
         stage.innerHTML = `
-          <div class="w-full max-w-4xl mx-auto p-4 space-y-4">
-            <div class="p-4 bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-sm flex items-center justify-between">
-              <div>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white">ZIP Archive Contents</h3>
-                <p class="text-xs text-slate-500">${entries.length} files and directories inside ${file.name}</p>
-              </div>
-              <span class="px-3 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-mono text-xs font-bold">COMPRESSED ARCHIVE</span>
-            </div>
-
-            <div class="bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-xl overflow-hidden divide-y divide-slate-100 dark:divide-gray-800">
+          <div class="w-full max-w-4xl mx-auto p-4 space-y-3">
+            <div class="bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-800 shadow-lg overflow-hidden divide-y divide-slate-100 dark:divide-gray-800 font-mono text-xs">
               ${entries.map(e => `
-                <div class="p-3 px-4 flex items-center justify-between text-xs hover:bg-slate-50 dark:hover:bg-gray-800/50">
-                  <div class="flex items-center gap-2.5 min-w-0">
-                    <span class="text-base">${e.dir ? '📁' : '📄'}</span>
-                    <span class="font-mono text-slate-800 dark:text-slate-200 truncate ${e.dir ? 'font-bold' : ''}">${escapeHtml(e.name)}</span>
+                <div class="p-3 px-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-gray-800/50">
+                  <div class="flex items-center gap-2.5 truncate">
+                    <span>${e.dir ? '📁' : '📄'}</span>
+                    <span class="truncate ${e.dir ? 'font-bold' : ''}">${escapeHtml(e.name)}</span>
                   </div>
-                  <span class="font-mono text-slate-400 shrink-0">${e.dir ? 'Directory' : formatBytes(e.size)}</span>
+                  <span class="text-slate-400 shrink-0 text-[11px]">${e.dir ? 'Dir' : formatBytes(e.size)}</span>
                 </div>
               `).join('')}
             </div>
@@ -1077,13 +1202,14 @@
         `;
 
         if (pageInfo) pageInfo.textContent = `Archive (${entries.length} items)`;
-
       } catch (err) {
         stage.innerHTML = `<div class="p-8 text-rose-500 font-semibold">Failed to inspect ZIP archive: ${escapeHtml(err.message)}</div>`;
       }
     },
 
-    // 8. Plain Text, Source Code & Markdown
+    // =========================================================================
+    // 8. CODE & TEXT & MARKDOWN
+    // =========================================================================
     renderCode() {
       const stage = document.getElementById('omniViewportStage');
       const pageInfo = document.getElementById('omniPageCounter');
@@ -1095,18 +1221,16 @@
       if (isMd && state.mdRendered) {
         stage.innerHTML = `
           <div class="w-full max-w-4xl mx-auto p-4 space-y-4">
-            <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-sm">
-              <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Markdown Rendered Preview</span>
-              <button id="toggleMdSourceBtn" type="button" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 text-xs font-bold text-slate-700 dark:text-slate-300">
-                View Raw Source
+            <div class="flex items-center justify-end">
+              <button id="toggleMdSourceBtn" type="button" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 text-xs font-semibold">
+                View Raw Markdown
               </button>
             </div>
-            <div class="p-8 sm:p-12 bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-xl text-slate-800 dark:text-slate-100">
+            <div class="p-8 sm:p-12 bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-800 shadow-xl text-slate-800 dark:text-slate-100 leading-relaxed">
               ${parseMarkdownToHtml(raw)}
             </div>
           </div>
         `;
-
         document.getElementById('toggleMdSourceBtn')?.addEventListener('click', () => {
           state.mdRendered = false;
           this.renderCode();
@@ -1120,37 +1244,22 @@
         <div class="w-full max-w-5xl mx-auto p-4 space-y-3">
           ${isMd ? `
             <div class="flex items-center justify-end">
-              <button id="toggleMdPreviewBtn" type="button" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow">
-                View Formatted Markdown Preview
+              <button id="toggleMdPreviewBtn" type="button" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 text-xs font-semibold">
+                View Rendered Preview
               </button>
             </div>
           ` : ''}
 
-          <div class="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-xl overflow-hidden">
-            <div class="flex items-center justify-between p-3 px-4 bg-slate-100 dark:bg-gray-900 border-b border-slate-200 dark:border-gray-800 text-xs">
-              <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-red-400"></span>
-                <span class="w-3 h-3 rounded-full bg-amber-400"></span>
-                <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
-                <span class="ml-2 font-mono text-slate-600 dark:text-slate-300 font-bold">${file.name}</span>
-              </div>
-              <button id="omniCopyRawCodeBtn" type="button" class="px-2.5 py-1 rounded-lg bg-white dark:bg-gray-800 border border-slate-300 dark:border-gray-700 font-semibold hover:bg-slate-50 text-[11px]">
-                Copy All Code
-              </button>
-            </div>
-
-            <div class="p-4 overflow-x-auto max-h-[75vh] custom-scrollbar font-mono text-xs leading-relaxed">
+          <div class="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-xl overflow-hidden font-mono text-xs">
+            <div class="p-4 overflow-x-auto max-h-[75vh] custom-scrollbar leading-relaxed">
               <table class="w-full">
                 <tbody>
-                  ${lines.map((ln, idx) => {
-                    const isHit = state.searchQuery && ln.toLowerCase().includes(state.searchQuery);
-                    return `
-                      <tr class="${isHit ? 'bg-amber-100 dark:bg-amber-950/40' : ''}">
-                        <td class="w-10 pr-4 text-right text-slate-400 select-none text-[11px] font-mono">${idx + 1}</td>
-                        <td class="text-slate-800 dark:text-slate-200 whitespace-pre">${escapeHtml(ln)}</td>
-                      </tr>
-                    `;
-                  }).join('')}
+                  ${lines.map((ln, idx) => `
+                    <tr>
+                      <td class="w-10 pr-4 text-right text-slate-400 select-none text-[11px]">${idx + 1}</td>
+                      <td class="text-slate-800 dark:text-slate-200 whitespace-pre">${escapeHtml(ln)}</td>
+                    </tr>
+                  `).join('')}
                 </tbody>
               </table>
             </div>
@@ -1158,21 +1267,16 @@
         </div>
       `;
 
-      if (pageInfo) pageInfo.textContent = `${lines.length} lines • ${raw.length} chars`;
+      if (pageInfo) pageInfo.textContent = `${lines.length} lines`;
 
       document.getElementById('toggleMdPreviewBtn')?.addEventListener('click', () => {
         state.mdRendered = true;
         this.renderCode();
       });
-
-      document.getElementById('omniCopyRawCodeBtn')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(raw);
-        if (window.showToast) window.showToast('Copied code to clipboard!', '#10B981');
-      });
     },
 
     // =========================================================================
-    // MODE 2: EXTRACTED TEXT INSPECTOR
+    // 9. RAW TEXT VIEW
     // =========================================================================
     renderText() {
       const stage = document.getElementById('omniViewportStage');
@@ -1181,23 +1285,16 @@
 
       const raw = file.extractedText || new TextDecoder('utf-8', { fatal: false }).decode(file.bytes || new Uint8Array());
       const words = raw.trim() ? raw.trim().split(/\s+/).length : 0;
-      const chars = raw.length;
 
       stage.innerHTML = `
-        <div class="w-full max-w-4xl mx-auto p-4 space-y-4">
-          <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-sm">
-            <div>
-              <h3 class="text-sm font-bold text-slate-900 dark:text-white">Extracted Document Text</h3>
-              <p class="text-xs text-slate-500 font-mono">${words.toLocaleString()} words • ${chars.toLocaleString()} characters</p>
-            </div>
-            <button id="copyExtractedTextBtn" type="button" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow flex items-center gap-1.5">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
-              <span>Copy Full Text</span>
+        <div class="w-full max-w-4xl mx-auto p-4 space-y-3">
+          <div class="flex items-center justify-end">
+            <button id="copyExtractedTextBtn" type="button" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-semibold text-xs flex items-center gap-1.5">
+              Copy Text
             </button>
           </div>
-
-          <div class="p-6 sm:p-8 bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-xl">
-            <pre class="font-mono text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-[70vh] overflow-y-auto custom-scrollbar select-text">${escapeHtml(raw)}</pre>
+          <div class="p-6 sm:p-8 bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-800 shadow-xl">
+            <pre class="font-mono text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-[75vh] overflow-y-auto custom-scrollbar select-text">${escapeHtml(raw)}</pre>
           </div>
         </div>
       `;
@@ -1206,12 +1303,12 @@
 
       document.getElementById('copyExtractedTextBtn')?.addEventListener('click', () => {
         navigator.clipboard.writeText(raw);
-        if (window.showToast) window.showToast('Copied extracted text to clipboard!', '#10B981');
+        if (window.showToast) window.showToast('Copied text to clipboard!', '#10B981');
       });
     },
 
     // =========================================================================
-    // MODE 3: UNIVERSAL HEX DUMP & STRINGS INSPECTOR
+    // 10. HEX DUMP INSPECTOR
     // =========================================================================
     renderHex() {
       const stage = document.getElementById('omniViewportStage');
@@ -1225,8 +1322,6 @@
       const chunk = bytes.slice(offset, offset + pageSize);
       const totalPages = Math.ceil(totalBytes / pageSize);
       const currentPage = Math.floor(offset / pageSize) + 1;
-
-      const detectedHeader = detectMagicHeader(bytes);
 
       let hexLinesHtml = '';
       for (let i = 0; i < chunk.length; i += 16) {
@@ -1250,46 +1345,35 @@
 
         hexLinesHtml += `
           <div class="flex items-center gap-4 hover:bg-slate-800/80 px-2 py-0.5 rounded">
-            <span class="text-rose-400 select-none">${lineOffset}</span>
+            <span class="text-slate-500 select-none">${lineOffset}</span>
             <span class="text-indigo-300 tracking-wider">${hexPart}</span>
-            <span class="text-emerald-400 font-bold border-l border-slate-700 pl-3">${escapeHtml(asciiPart)}</span>
+            <span class="text-slate-300 font-bold border-l border-slate-700 pl-3">${escapeHtml(asciiPart)}</span>
           </div>
         `;
       }
 
       stage.innerHTML = `
-        <div class="w-full max-w-5xl mx-auto p-4 space-y-4">
-          <!-- Header Banner -->
-          <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl flex flex-wrap items-center justify-between gap-3 text-white">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                <h3 class="text-sm font-bold font-mono">Binary &amp; Hex Dump Inspector</h3>
-              </div>
-              <p class="text-xs text-slate-400 font-mono mt-1">${detectedHeader}</p>
-            </div>
+        <div class="w-full max-w-5xl mx-auto p-4 space-y-3">
+          <div class="flex items-center justify-between text-xs font-mono text-slate-400">
+            <span>Offset 0x${offset.toString(16).toUpperCase()} (${formatBytes(totalBytes)})</span>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-mono text-slate-400">Chunk ${currentPage} / ${totalPages}</span>
-              <button id="hexPrevChunkBtn" type="button" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono font-bold" ${offset === 0 ? 'disabled' : ''}>◀ Prev 1KB</button>
-              <button id="hexNextChunkBtn" type="button" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs font-mono font-bold" ${offset + pageSize >= totalBytes ? 'disabled' : ''}>Next 1KB ▶</button>
+              <span>Chunk ${currentPage} / ${totalPages}</span>
+              <button id="hexPrevChunkBtn" type="button" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-bold" ${offset === 0 ? 'disabled' : ''}>◀ Prev</button>
+              <button id="hexNextChunkBtn" type="button" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-bold" ${offset + pageSize >= totalBytes ? 'disabled' : ''}>Next ▶</button>
             </div>
           </div>
-
-          <!-- Hex Output Box -->
-          <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800 shadow-2xl font-mono text-xs leading-relaxed overflow-x-auto custom-scrollbar select-text">
+          <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 shadow-2xl font-mono text-xs leading-relaxed overflow-x-auto custom-scrollbar select-text">
             <div class="flex items-center gap-4 pb-2 mb-2 border-b border-slate-800 text-[11px] font-bold text-slate-500">
               <span class="w-20">OFFSET</span>
               <span class="tracking-wider">00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F</span>
               <span class="border-l border-slate-800 pl-3">ASCII</span>
             </div>
-            <div class="space-y-0.5">
-              ${hexLinesHtml}
-            </div>
+            <div class="space-y-0.5">${hexLinesHtml}</div>
           </div>
         </div>
       `;
 
-      if (pageInfo) pageInfo.textContent = `Offset 0x${offset.toString(16).toUpperCase()} (${formatBytes(totalBytes)})`;
+      if (pageInfo) pageInfo.textContent = `Hex 0x${offset.toString(16).toUpperCase()}`;
 
       document.getElementById('hexPrevChunkBtn')?.addEventListener('click', () => {
         state.hexOffset = Math.max(0, state.hexOffset - state.hexPageSize);
@@ -1304,13 +1388,8 @@
       });
     },
 
-    renderHexFallback() {
-      // For any unknown extension
-      this.renderHex();
-    },
-
     // =========================================================================
-    // MODE 4: FILE METADATA INSPECTOR
+    // 11. METADATA
     // =========================================================================
     renderMetadata() {
       const stage = document.getElementById('omniViewportStage');
@@ -1322,62 +1401,36 @@
       const first16Hex = Array.from(bytes.slice(0, 16)).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
 
       stage.innerHTML = `
-        <div class="w-full max-w-4xl mx-auto p-4 space-y-4">
-          <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-xl space-y-6">
-            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-gray-800">
-              <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xl">
-                  ℹ️
-                </div>
-                <div>
-                  <h3 class="text-base font-bold text-slate-900 dark:text-white">${file.name}</h3>
-                  <p class="text-xs text-slate-500">${magic}</p>
-                </div>
-              </div>
-              <span class="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-500 text-white uppercase">${file.ext || 'FILE'}</span>
+        <div class="w-full max-w-4xl mx-auto p-4">
+          <div class="p-6 bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-800 shadow-xl space-y-4 text-xs">
+            <div class="pb-3 border-b border-slate-200 dark:border-gray-800">
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">${file.name}</h3>
+              <p class="text-slate-500">${magic}</p>
             </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div class="p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 border border-slate-200/80 dark:border-gray-700/80 space-y-1">
-                <span class="text-slate-400 font-medium">File Size</span>
-                <p class="text-sm font-bold text-slate-800 dark:text-slate-100 font-mono">${formatBytes(file.size || bytes.length)} (${(file.size || bytes.length).toLocaleString()} bytes)</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-3 rounded-lg bg-slate-50 dark:bg-gray-800/50 border border-slate-200 dark:border-gray-700">
+                <span class="text-slate-400">File Size</span>
+                <p class="font-bold text-slate-800 dark:text-slate-100 font-mono mt-0.5">${formatBytes(file.size || bytes.length)} (${(file.size || bytes.length).toLocaleString()} bytes)</p>
               </div>
-
-              <div class="p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 border border-slate-200/80 dark:border-gray-700/80 space-y-1">
-                <span class="text-slate-400 font-medium">MIME Content Type</span>
-                <p class="text-sm font-bold text-slate-800 dark:text-slate-100 font-mono">${file.type || 'application/octet-stream'}</p>
-              </div>
-
-              <div class="p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 border border-slate-200/80 dark:border-gray-700/80 space-y-1">
-                <span class="text-slate-400 font-medium">Page / Item Count</span>
-                <p class="text-sm font-bold text-slate-800 dark:text-slate-100 font-mono">${state.totalPages || state.totalSlides || 1} units</p>
-              </div>
-
-              <div class="p-4 rounded-xl bg-slate-50 dark:bg-gray-800/50 border border-slate-200/80 dark:border-gray-700/80 space-y-1">
-                <span class="text-slate-400 font-medium">Detected Architecture / Header</span>
-                <p class="text-sm font-bold text-slate-800 dark:text-slate-100 font-mono truncate">${magic}</p>
+              <div class="p-3 rounded-lg bg-slate-50 dark:bg-gray-800/50 border border-slate-200 dark:border-gray-700">
+                <span class="text-slate-400">MIME Content Type</span>
+                <p class="font-bold text-slate-800 dark:text-slate-100 font-mono mt-0.5">${file.type || 'application/octet-stream'}</p>
               </div>
             </div>
-
-            <div class="p-4 rounded-xl bg-slate-900 text-white space-y-2">
-              <span class="text-xs text-slate-400 font-mono">Magic Bytes Header (First 16 Bytes)</span>
-              <p class="text-sm font-mono text-emerald-400 tracking-wider">${first16Hex || 'None'}</p>
+            <div class="p-3 rounded-lg bg-slate-900 text-white font-mono">
+              <span class="text-slate-400">Magic Bytes (Header)</span>
+              <p class="text-emerald-400 tracking-wider mt-0.5">${first16Hex || 'None'}</p>
             </div>
           </div>
         </div>
       `;
 
-      if (pageInfo) pageInfo.textContent = `File Metadata`;
+      if (pageInfo) pageInfo.textContent = `Properties`;
     },
 
-    // =========================================================================
-    // UTILITIES: SEARCH, DOWNLOAD, PRINT
-    // =========================================================================
     applySearch() {
       if (state.mode === 'render' && state.fileType === 'xlsx') {
         this.renderXlsx();
-      } else if (state.mode === 'code') {
-        this.renderCode();
       }
     },
 
@@ -1403,10 +1456,8 @@
     }
   };
 
-  // Attach to window object
   window.PDFMaxxViewer = Viewer;
 
-  // Initialize once DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => Viewer.init());
   } else {
