@@ -84,3 +84,7 @@ header {
 .badge-new {
   animation: pulseGlow 2.4s infinite ease-in-out;
 }
+
+.invert-filter {
+  filter: invert(1) hue-rotate(180deg);
+}

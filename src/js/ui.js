@@ -218,6 +218,24 @@
         const img1 = createSyntheticDocumentImage('Scanned Commercial Invoice #INV-2026-089', '#0284C7');
         const img2 = createSyntheticDocumentImage('Signed Delivery Receipt #REC-8841', '#059669');
         state.files.push(img1, img2);
+      } else if (tool.id === 'universal-file-viewer') {
+        const s1 = await generateSamplePdfBytes('executive');
+        const fileObj = {
+          id: 'sample_viewer',
+          name: 'Universal_Document_Omni_Viewer_Showcase.pdf',
+          size: s1.bytes.length,
+          type: 'application/pdf',
+          ext: 'pdf',
+          bytes: s1.bytes,
+          pageCount: s1.pageCount,
+          extractedText: s1.extractedText,
+          tables: s1.tables,
+          pagesMeta: Array.from({ length: s1.pageCount }, (_, i) => ({ num: i + 1, rotation: 0, deleted: false }))
+        };
+        state.files.push(fileObj);
+        if (!silent && window.PDFMaxxViewer) {
+          setTimeout(() => window.PDFMaxxViewer.open(fileObj), 150);
+        }
       } else {
         const s1 = await generateSamplePdfBytes('executive');
         let sampleName = 'Q4_Global_Operations_Report.pdf';
@@ -438,6 +456,9 @@
             </div>
           </div>
           <div class="flex items-center gap-1 shrink-0">
+            <button type="button" data-view-file="${idx}" class="p-1.5 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold" title="Inspect / View File in Omni Viewer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
             ${state.files.length > 1 ? `
               <button type="button" data-move-up="${idx}" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-gray-700 text-slate-600 dark:text-slate-300" title="Move Up">↑</button>
               <button type="button" data-move-down="${idx}" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-gray-700 text-slate-600 dark:text-slate-300" title="Move Down">↓</button>
@@ -446,6 +467,15 @@
           </div>
         </div>
       `).join('');
+
+      list.querySelectorAll('[data-view-file]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = parseInt(btn.getAttribute('data-view-file'), 10);
+          if (state.files[i] && window.PDFMaxxViewer) {
+            window.PDFMaxxViewer.open(state.files[i]);
+          }
+        });
+      });
 
       list.querySelectorAll('[data-move-up]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1317,6 +1347,50 @@
           `;
           break;
 
+        case 'universal-file-viewer':
+          box.innerHTML = `
+            <div class="space-y-3 text-xs">
+              <div class="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="space-y-0.5 text-center sm:text-left">
+                  <span class="font-extrabold text-sm block">Universal File Viewer &amp; Inspector</span>
+                  <span class="text-[11px] opacity-80">Inspect documents, office files, code, images, audio, video &amp; raw binary hex dumps 100% offline.</span>
+                </div>
+                <button id="openOmniViewerFromOptionsBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0 shadow flex items-center gap-1.5 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  <span>Launch Full Viewer</span>
+                </button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-semibold mb-1">Default Inspection Mode</label>
+                  <select id="optViewerDefaultMode" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
+                    <option value="render">Rendered High-Fidelity View</option>
+                    <option value="text">Extracted Document Text</option>
+                    <option value="hex">Binary Hex Dump &amp; Magic Bytes</option>
+                    <option value="meta">File Architecture &amp; Metadata</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Spreadsheet / Code Preview Limit</label>
+                  <select id="optViewerLimit" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700">
+                    <option value="500">First 500 rows / lines</option>
+                    <option value="1000">First 1,000 rows / lines</option>
+                    <option value="all">Full Document / Uncapped</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          `;
+          document.getElementById('openOmniViewerFromOptionsBtn')?.addEventListener('click', () => {
+            if (state.files.length > 0 && window.PDFMaxxViewer) {
+              const defaultMode = document.getElementById('optViewerDefaultMode')?.value || 'render';
+              window.PDFMaxxViewer.open(state.files[0], { mode: defaultMode });
+            } else {
+              showToast('Upload a file or click "Load Sample File" to view', '#4F46E5');
+            }
+          });
+          break;
+
         default:
           box.innerHTML = `<p class="text-xs text-slate-500">Ready to process your file with optimal settings.</p>`;
       }
@@ -1539,6 +1613,7 @@
                   <button type="button" data-page-right="${fIdx}:${pIdx}" class="px-1 py-0.5 rounded bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 font-bold" title="Move Page Later">→</button>
                 </div>
                 <div class="flex items-center gap-1">
+                  <button type="button" data-page-view="${fIdx}:${pIdx}" class="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold" title="Inspect Page in Omni Viewer">👁</button>
                   <button type="button" data-page-rot="${fIdx}:${pIdx}" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-800 hover:bg-slate-200 font-bold" title="Rotate Page 90°">↻</button>
                   ${activePagesCount > 1 ? `<button type="button" data-page-del="${fIdx}:${pIdx}" class="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/60 text-rose-600 font-bold" title="Delete Page">✕</button>` : ''}
                 </div>
@@ -1549,6 +1624,15 @@
       });
 
       stage.innerHTML = `<div class="w-full grid grid-cols-2 sm:grid-cols-3 gap-2.5">${cardsHtml.join('')}</div>`;
+
+      stage.querySelectorAll('[data-page-view]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const [fIdx, pIdx] = btn.getAttribute('data-page-view').split(':').map(Number);
+          if (state.files[fIdx] && window.PDFMaxxViewer) {
+            window.PDFMaxxViewer.open(state.files[fIdx], { page: pIdx + 1 });
+          }
+        });
+      });
 
       stage.querySelectorAll('[data-page-left]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1896,6 +1980,18 @@
       document.getElementById('loadSampleBtn').addEventListener('click', () => {
         loadSampleFilesForCurrentTool(false);
       });
+
+      // Open Omni Viewer from Live Preview Stage header button
+      const openOmniBtn = document.getElementById('openOmniViewerFromStageBtn');
+      if (openOmniBtn) {
+        openOmniBtn.addEventListener('click', () => {
+          if (state.files.length > 0 && window.PDFMaxxViewer) {
+            window.PDFMaxxViewer.open(state.files[0]);
+          } else {
+            showToast('Load or drop a file first to view its contents', '#E11D48');
+          }
+        });
+      }
 
       document.getElementById('clearFilesBtn').addEventListener('click', () => {
         state.files = [];

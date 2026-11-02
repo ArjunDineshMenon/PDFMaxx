@@ -1,10 +1,17 @@
 // PDFMaxx — Offline Progressive Web App (PWA) Service Worker
-const CACHE_NAME = 'pdfmaxx-cache-v2';
+const CACHE_NAME = 'pdfmaxx-cache-v3';
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './css/styles.css',
+  './js/tools-config.js',
+  './js/state.js',
+  './js/pdf-engine.js',
+  './js/viewer-engine.js',
+  './js/processor.js',
+  './js/ui.js',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];

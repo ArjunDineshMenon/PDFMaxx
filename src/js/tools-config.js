@@ -389,11 +389,23 @@
         multiple: true,
         isNew: false,
         icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>'
+      },
+      {
+        id: 'universal-file-viewer',
+        title: 'Universal File Viewer',
+        desc: 'View and inspect any file format: PDF, Word, PowerPoint, Excel, Images, Code, Audio, Video, Archives & Hex inspection.',
+        category: 'AI & Smart',
+        color: '#4F46E5', // Royal Indigo
+        badgeBg: 'rgba(79, 70, 229, 0.12)',
+        accept: '*/*',
+        multiple: true,
+        isNew: true,
+        icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>'
       }
     ];
 
     const CATEGORIES = [
-      { id: 'all', label: 'All Tools (32)' },
+      { id: 'all', label: 'All Tools (33)' },
       { id: 'Organize', label: 'Organize PDF' },
       { id: 'Optimize', label: 'Optimize & Repair' },
       { id: 'Convert to PDF', label: 'Convert to PDF' },

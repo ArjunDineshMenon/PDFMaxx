@@ -85,6 +85,26 @@
       let richTextPreview = '';
       let outSubFiles = null;
 
+        if (tool.id === 'universal-file-viewer') {
+          if (window.PDFMaxxViewer) {
+            window.PDFMaxxViewer.open(primaryFile);
+          }
+          outBytes = primaryFile.bytes;
+          outMime = primaryFile.type || 'application/octet-stream';
+          outExt = primaryFile.ext || 'bin';
+          outFilename = primaryFile.name;
+          richTextPreview = primaryFile.extractedText || `[File: ${primaryFile.name} (${formatBytes(primaryFile.bytes.length)})]`;
+          resultSummary = `Inspected ${primaryFile.name} in the Universal File Viewer. Ready for reading, text extraction, or conversion.`;
+          return {
+            bytes: outBytes,
+            mime: outMime,
+            ext: outExt,
+            filename: outFilename,
+            summary: resultSummary,
+            richText: richTextPreview
+          };
+        }
+
         // -------------------------------------------------------------------
         // A. NON-PDF TARGET FORMAT CONVERSIONS (Word, PPTX, XLSX, JPG, MD)
         // -------------------------------------------------------------------

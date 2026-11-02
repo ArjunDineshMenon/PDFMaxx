@@ -15,7 +15,7 @@ with open(os.path.join(src_dir, "index.html"), "r", encoding="utf-8") as f:
 with open(os.path.join(src_dir, "css", "styles.css"), "r", encoding="utf-8") as f:
     css = f.read()
 
-js_files = ["tools-config.js", "state.js", "pdf-engine.js", "processor.js", "ui.js"]
+js_files = ["tools-config.js", "state.js", "pdf-engine.js", "viewer-engine.js", "processor.js", "ui.js"]
 js_combined = []
 for jf in js_files:
     with open(os.path.join(src_dir, "js", jf), "r", encoding="utf-8") as f:
@@ -27,6 +27,7 @@ scripts_block = (
     '  <script src="js/tools-config.js"></script>\n'
     '  <script src="js/state.js"></script>\n'
     '  <script src="js/pdf-engine.js"></script>\n'
+    '  <script src="js/viewer-engine.js"></script>\n'
     '  <script src="js/processor.js"></script>\n'
     '  <script src="js/ui.js"></script>'
 )
